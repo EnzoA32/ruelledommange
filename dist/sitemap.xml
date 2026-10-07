@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://www.ruelle-dommange.fr/</loc>
+    <lastmod>2026-10-07</lastmod>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/produits/</loc>
+    <lastmod>2026-10-07</lastmod>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/creation-etiquette/</loc>
+    <lastmod>2026-10-07</lastmod>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/a-propos/</loc>
+    <lastmod>2026-10-07</lastmod>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/contact/</loc>
+    <lastmod>2026-10-07</lastmod>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/produits/blanc-de-blancs/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <image:image>
+      <image:loc>https://www.ruelle-dommange.fr/assets/img/photoBlancDeBlancs.53316b12.webp</image:loc>
+      <image:title>Blanc de blancs – Ruelle-Dommange</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/produits/champagne-brut/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <image:image>
+      <image:loc>https://www.ruelle-dommange.fr/assets/img/photoBrut.8f2ba26c.webp</image:loc>
+      <image:title>Champagne Brut – Ruelle-Dommange</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/produits/champagne-demi-sec/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <image:image>
+      <image:loc>https://www.ruelle-dommange.fr/assets/img/photoDemiSec.7e53dff6.webp</image:loc>
+      <image:title>Champagne Demi-sec – Ruelle-Dommange</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/produits/champagne-millesime/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <image:image>
+      <image:loc>https://www.ruelle-dommange.fr/assets/img/photoMillesime.8de023d6.webp</image:loc>
+      <image:title>Champagne Millésime – Ruelle-Dommange</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/produits/champagne-pink-flower/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <image:image>
+      <image:loc>https://www.ruelle-dommange.fr/assets/img/photoPinkFlower.c13de20e.webp</image:loc>
+      <image:title>Champagne Pink Flower – Ruelle-Dommange</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/produits/bulles-de-vanille/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <image:image>
+      <image:loc>https://www.ruelle-dommange.fr/assets/img/photoBullesVanille.045c4c92.webp</image:loc>
+      <image:title>Bulles de Vanille – Ruelle-Dommange</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/produits/bulles-de-vanille-rose/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <image:image>
+      <image:loc>https://www.ruelle-dommange.fr/assets/img/photoBullesVanilleRose.6158600e.webp</image:loc>
+      <image:title>Bulles de Vanille Rosé – Ruelle-Dommange</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/produits/coffret-2-verres/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <image:image>
+      <image:loc>https://www.ruelle-dommange.fr/assets/img/bottleIllustration.c6bb231c.webp</image:loc>
+      <image:title>Coffret + 2 verres – Ruelle-Dommange</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/produits/demi-bouteille-brut/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <image:image>
+      <image:loc>https://www.ruelle-dommange.fr/assets/img/photoDemiBouteille.c863b474.webp</image:loc>
+      <image:title>Demi-bouteille Brut – Ruelle-Dommange</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/produits/magnum-brut/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <image:image>
+      <image:loc>https://www.ruelle-dommange.fr/assets/img/photoMagnum.0e0ad256.webp</image:loc>
+      <image:title>Magnum Brut – Ruelle-Dommange</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://www.ruelle-dommange.fr/produits/ratafia/</loc>
+    <lastmod>2026-10-07</lastmod>
+    <image:image>
+      <image:loc>https://www.ruelle-dommange.fr/assets/img/photoRatafia.626eebb0.webp</image:loc>
+      <image:title>Ratafia – Ruelle-Dommange</image:title>
+    </image:image>
+  </url>
+</urlset>
