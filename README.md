@@ -1,64 +1,63 @@
-# Site Ruelle-Dommange
+# Site Ruelle-Dommange — version optimisée SEO
 
-Site vitrine du Champagne Ruelle-Dommange — un seul fichier `index.html`
-autonome (police Larken, images, vidéo du hero : tout est intégré dans
-le fichier, aucune dépendance externe à héberger séparément).
+Site statique **pré-rendu** : chaque page (accueil, produits, chaque fiche produit, à propos…) est un vrai fichier HTML
+avec son propre titre, sa description, son URL, ses données structurées — lisible par Google sans exécuter de JavaScript.
+Le catalogue (prix, descriptions, nouveaux produits) vient de ton **Google Sheet**.
 
-## Déployer sur GitHub + Vercel
+## Structure
 
-### 1. Mettre le projet sur GitHub
+```
+src/                  ← LE CODE SOURCE (c'est ici qu'on modifie le site)
+  assets/js/app.js      pages, textes, SEO, lecture du Google Sheet
+  assets/css/style.css  design
+  assets/img|fonts|video|og   médias (images WebP compressées, polices, vidéo, visuels de partage)
+  body.html / head.html       en-tête, menu, pied de page
+build.mjs             ← génère le site final dans dist/
+site.config.json      ← ⚠ NOM DE DOMAINE (à vérifier, voir ci-dessous)
+vercel.json           ← config Vercel (build, cache, redirections, en-têtes de sécurité)
+dist/                 ← le site prêt à publier (généré)
+```
 
-**Option A — directement depuis l'interface GitHub (le plus simple) :**
-1. Va sur [github.com/new](https://github.com/new) et crée un nouveau dépôt
-   (par exemple `ruelle-dommange-site`), en **public** ou **privé** au choix.
-2. Sur la page du dépôt vide, clique sur *"uploading an existing file"*.
-3. Glisse-dépose `index.html` (et `catalogue-ruelle-dommange.csv` si tu veux
-   le garder dans le dépôt) puis clique sur *Commit changes*.
+## 1. À faire AVANT la mise en ligne
 
-**Option B — en ligne de commande, si tu as Git installé :**
+1. **Domaine** : ouvre `site.config.json` et mets le vrai domaine (par défaut : `https://www.ruelle-dommange.fr`, une hypothèse).
+   Il sert aux balises canonical, au sitemap, aux images de partage et aux données structurées.
+2. **Contenus à confirmer** (voir « Points à valider » dans la réponse) : e-mail, réseaux sociaux, événements.
+
+## 2. Publier sur Vercel (recommandé : le Sheet est relu à chaque déploiement)
+
+1. Mets tout le dossier (sans `node_modules`) sur GitHub.
+2. Sur vercel.com/new : importe le dépôt. Les réglages sont déjà dans `vercel.json`
+   (Install `npm install`, Build `npm run build`, Output `dist`) → clique sur **Deploy**.
+3. Domaine : *Settings → Domains*. Configure aussi la redirection `ruelle-dommange.fr` → `www.ruelle-dommange.fr` (ou l'inverse) ;
+   une seule version doit répondre.
+
+> Alternative sans build : envoie uniquement le contenu de `dist/` (mais les pages ne seront pas régénérées avec le Sheet).
+
+## 3. Google Sheet = catalogue
+
+Colonnes attendues (1re ligne) : `id, nom, prix, categorie, tag, description`
+
+- Modifier un prix / une description : modifier la ligne du Sheet (l'`id` doit rester identique).
+- Nouveau produit : ajouter une ligne avec un `id` unique en minuscules-avec-tirets (ex. `champagne-rose`). Une page `/produits/champagne-rose/` est créée.
+- Dans la description, un retour à la ligne = un nouveau paragraphe.
+- Le Sheet doit rester **publié sur le web** (*Fichier → Partager → Publier sur le web*, format CSV).
+
+Fonctionnement : les visiteurs voient toujours les prix du Sheet en direct. Google, lui, voit les prix du **dernier déploiement**.
+Pour que les pages indexées se mettent à jour après un changement de prix : *Vercel → Settings → Git → Deploy Hooks*,
+ou simplement relancer un déploiement (*Redeploy*). Un produit tout juste ajouté n'a sa page indexable qu'après un déploiement.
+
+## 4. Après la mise en ligne (20 minutes, très important)
+
+1. **Google Search Console** → ajouter le domaine → *Sitemaps* → envoyer `https://TON-DOMAINE/sitemap.xml`.
+2. *Inspection d'URL* sur la page d'accueil → *Demander une indexation*.
+3. Tester une fiche produit sur https://search.google.com/test/rich-results (doit afficher « Produit » et « Fil d'Ariane »).
+4. Créer/revendiquer la fiche **Google Business Profile** (adresse : 47 rue de la Fontaine, 02310 Domptin) — premier levier de SEO local.
+5. Obtenir des liens depuis : interprofession (champagne.fr), office de tourisme de Château-Thierry, annuaires de vignerons.
+
+## Commandes (si tu travailles en local)
+
 ```bash
-cd ruelle-dommange
-git init
-git add .
-git commit -m "Site Ruelle-Dommange"
-git branch -M main
-git remote add origin https://github.com/TON-COMPTE/ruelle-dommange-site.git
-git push -u origin main
+npm install
+npm run build        # génère dist/
 ```
-
-### 2. Connecter Vercel
-
-1. Va sur [vercel.com/new](https://vercel.com/new) et connecte-toi (tu peux
-   te connecter directement avec ton compte GitHub).
-2. Clique sur *Import* à côté du dépôt `ruelle-dommange-site`.
-3. Vercel détecte automatiquement un site statique — tu peux laisser tous
-   les champs par défaut (aucun *Build Command* n'est nécessaire).
-4. Clique sur *Deploy*. Au bout de quelques secondes, ton site est en ligne
-   sur une adresse du type `ruelle-dommange-site.vercel.app`.
-
-### 3. Mettre ton propre nom de domaine (optionnel)
-
-Dans le projet Vercel : *Settings → Domains* → ajoute ton nom de domaine
-(ex. `ruelle-dommange.fr`) et suis les instructions pour pointer tes DNS
-(Vercel indique exactement les enregistrements à créer chez ton
-registrar).
-
-### 4. Mettre à jour le site plus tard
-
-Chaque fois que tu modifies `index.html` et que tu pousses (`git push`) ou
-que tu re-téléverses le fichier sur GitHub, Vercel redéploie automatiquement
-le site en quelques secondes — rien d'autre à faire.
-
-## Brancher le catalogue Google Sheets (prix / descriptions)
-
-Le fichier `catalogue-ruelle-dommange.csv` est le point de départ à
-importer dans un Google Sheet pour que la cliente puisse modifier les prix
-et descriptions elle-même. Une fois le Sheet publié sur le web (format
-CSV), colle son URL dans la constante `SHEET_CSV_URL` tout en haut de la
-balise `<script>` dans `index.html` :
-
-```js
-var SHEET_CSV_URL = "COLLE_TON_URL_CSV_ICI";
-```
-
-Puis repousse le fichier sur GitHub — Vercel redéploiera automatiquement.

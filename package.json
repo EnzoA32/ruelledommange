@@ -1,0 +1,8 @@
+{
+  "name": "ruelle-dommange-site",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": { "build": "node build.mjs" },
+  "dependencies": { "jsdom": "^25.0.1" }
+}
