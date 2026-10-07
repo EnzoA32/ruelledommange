@@ -1,0 +1,82 @@
+<a class="skip-link" href="#app">Aller au contenu</a>
+<header class="site-header">
+  <div class="wrap nav-row">
+    <nav class="nav-left" aria-label="Navigation principale">
+      <a href="/" data-nav="/">Accueil</a>
+      <a href="/produits/" data-nav="/produits">Nos Produits</a>
+      <a href="/creation-etiquette/" data-nav="/etiquette">Création d'étiquette</a>
+    </nav>
+    <a href="/" class="logo" aria-label="Ruelle-Dommange, accueil">
+      <svg viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="8" width="26" height="26" rx="1" transform="rotate(45 21 21)" stroke="#211d12" stroke-width="1.1"/>
+        <path d="M15 21 Q21 14 27 21 Q21 28 15 21Z" stroke="#211d12" stroke-width="1" fill="none"/>
+      </svg>
+    </a>
+    <nav class="nav-left" aria-label="Navigation secondaire" style="justify-content:flex-end;">
+      <a href="/evenements/" data-nav="/evenements">Événements</a>
+      <a href="/a-propos/" data-nav="/apropos">A propos</a>
+    </nav>
+    <div class="nav-right">
+      <a href="/contact/" class="btn" data-nav="/contact">Contactez-nous</a>
+      <button class="icon-btn" aria-label="Favoris" id="wishBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M12 21s-7.5-4.6-10-9.1C.6 8.6 2.2 5 5.6 5c2 0 3.4 1.1 4.4 2.6C11 6.1 12.4 5 14.4 5c3.4 0 5 3.6 3.6 6.9C19.5 16.4 12 21 12 21z"/></svg>
+      </button>
+      <button class="icon-btn" aria-label="Panier" id="cartBtn">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 6h2l2 12h11l1.5-8H7"/><circle cx="10" cy="21" r="1"/><circle cx="17" cy="21" r="1"/></svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+      <button class="burger" id="burgerBtn" aria-label="Menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+    </div>
+  </div>
+  <nav class="mobile-menu wrap" id="mobileMenu" aria-label="Menu mobile">
+    <a href="/">Accueil</a>
+    <a href="/produits/">Nos Produits</a>
+    <a href="/creation-etiquette/">Création d'étiquette</a>
+    <a href="/evenements/">Événements</a>
+    <a href="/a-propos/">A propos</a>
+    <a href="/contact/">Contactez-nous</a>
+    <a href="/panier/">Panier</a>
+  </nav>
+</header>
+
+<main id="app" tabindex="-1"></main>
+
+<footer>
+  <div class="wrap">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <h4>Ruelle-Dommange</h4>
+        <p>Viticulteur de père en fils, nous vous offrons une gamme de produits de qualité à des prix défiant toute concurrence.</p>
+      </div>
+      <div>
+        <h5>Nos Produits</h5>
+        <ul>
+          <li><a href="/produits/">Nos champagnes</a></li>
+          <li><a href="/produits/">Nos Bulles Vanille</a></li>
+          <li><a href="/produits/">Le Merchandising</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>Événements</h5>
+        <ul><li><a href="/evenements/">Voir l'agenda</a></li></ul>
+      </div>
+      <div>
+        <h5>À propos</h5>
+        <ul><li><a href="/a-propos/">Notre histoire</a></li></ul>
+      </div>
+      <div>
+        <h5>Contactez-nous</h5>
+        <ul>
+          <li><a href="mailto:info@corbillonnerie.com">info@corbillonnerie.com</a></li>
+          <li><a href="tel:+33682123766">+33 6 82 12 37 66</a></li>
+        </ul>
+      </div>
+    </div>
+    <p class="copyright">Copyright © Ruelle-Dommange. Tous droits réservés. Développé et Designé par @StudioOnze</p>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
