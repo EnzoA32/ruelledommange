@@ -1,63 +1,44 @@
-# Site Ruelle-Dommange — version optimisée SEO
+# Ruelle-Dommange — site vitrine + boutique
 
-Site statique **pré-rendu** : chaque page (accueil, produits, chaque fiche produit, à propos…) est un vrai fichier HTML
-avec son propre titre, sa description, son URL, ses données structurées — lisible par Google sans exécuter de JavaScript.
-Le catalogue (prix, descriptions, nouveaux produits) vient de ton **Google Sheet**.
+Site statique pré-rendu (SEO) hébergé sur Vercel, données gérées dans Supabase.
 
-## Structure
+## Fonctionnement
+- `npm run build` lit les produits et événements dans **Supabase**, pré-rend toutes les pages (`dist/`), génère `sitemap.xml`, `robots.txt` et `vercel.json`.
+- Au chargement, le navigateur relit Supabase : **prix, stock, nouveaux produits et événements sont visibles immédiatement** sans redéploiement.
+- Si Supabase est injoignable, le site affiche les données par défaut codées dans `src/assets/js/app.js`.
 
-```
-src/                  ← LE CODE SOURCE (c'est ici qu'on modifie le site)
-  assets/js/app.js      pages, textes, SEO, lecture du Google Sheet
-  assets/css/style.css  design
-  assets/img|fonts|video|og   médias (images WebP compressées, polices, vidéo, visuels de partage)
-  body.html / head.html       en-tête, menu, pied de page
-build.mjs             ← génère le site final dans dist/
-site.config.json      ← ⚠ NOM DE DOMAINE (à vérifier, voir ci-dessous)
-vercel.json           ← config Vercel (build, cache, redirections, en-têtes de sécurité)
-dist/                 ← le site prêt à publier (généré)
-```
+## Configuration (`site.config.json`)
+| Clé | Rôle |
+|---|---|
+| `siteUrl` | Nom de domaine final (canonical, sitemap, Open Graph) — **à mettre à jour** |
+| `supabaseUrl` / `supabaseKey` | URL du projet et clé **publique** (`sb_publishable_…`). Jamais la clé secrète. |
 
-## 1. À faire AVANT la mise en ligne
+## Base de données
+`supabase/schema.sql` (à exécuter une fois dans Supabase > SQL Editor) crée les tables `products`, `events`, `orders`, `admins`, le stockage d'images `media` et les règles de sécurité (RLS).
+Premier administrateur : créer l'utilisateur dans *Authentication > Users*, puis `insert into public.admins (user_id) select id from auth.users where email = '…';`
 
-1. **Domaine** : ouvre `site.config.json` et mets le vrai domaine (par défaut : `https://www.ruelle-dommange.fr`, une hypothèse).
-   Il sert aux balises canonical, au sitemap, aux images de partage et aux données structurées.
-2. **Contenus à confirmer** (voir « Points à valider » dans la réponse) : e-mail, réseaux sociaux, événements.
+## Interface d'administration — `/admin/`
+Connexion par e-mail + mot de passe (réservée aux comptes présents dans `admins`).
+- **Produits** : nom, prix TTC, stock (0 = épuisé), catégorie, description, photo (optimisée automatiquement), visibilité, ordre.
+- **Événements** : titre, date/heure (heure de Paris), lieu, adresse, description, image, publié / brouillon. Seuls les événements publiés et à venir s'affichent ; la page Événements n'est indexée par Google que s'il y en a.
+- **Commandes** : liste et changement de statut (alimentée par Stripe, étape suivante).
+- Bouton **« Mettre à jour pour Google »** : relance un déploiement pour que les pages pré-rendues (SEO) contiennent les derniers produits/événements.
 
-## 2. Publier sur Vercel (recommandé : le Sheet est relu à chaque déploiement)
+### Variables d'environnement Vercel (uniquement pour ce bouton)
+| Variable | Valeur |
+|---|---|
+| `SUPABASE_URL` | URL du projet Supabase |
+| `SUPABASE_KEY` | clé publique `sb_publishable_…` |
+| `DEPLOY_HOOK_URL` | Vercel > Settings > Git > Deploy Hooks > créer un hook (branche de production) |
 
-1. Mets tout le dossier (sans `node_modules`) sur GitHub.
-2. Sur vercel.com/new : importe le dépôt. Les réglages sont déjà dans `vercel.json`
-   (Install `npm install`, Build `npm run build`, Output `dist`) → clique sur **Deploy**.
-3. Domaine : *Settings → Domains*. Configure aussi la redirection `ruelle-dommange.fr` → `www.ruelle-dommange.fr` (ou l'inverse) ;
-   une seule version doit répondre.
+## Prix
+Tous les prix sont **TTC** (TVA 20 % incluse). Stockés en centimes dans `products.price_cents`. Livraison : 5,90 € sous 100 € d'achat, offerte au-delà.
 
-> Alternative sans build : envoie uniquement le contenu de `dist/` (mais les pages ne seront pas régénérées avec le Sheet).
+## Mise en ligne
+1. GitHub : pousser le dossier (sans `node_modules`).
+2. vercel.com/new → importer le dépôt → Deploy (réglages dans `vercel.json`).
+3. Ajouter le domaine dans Vercel et mettre `siteUrl` à jour.
+4. Search Console : envoyer `https://<domaine>/sitemap.xml`.
 
-## 3. Google Sheet = catalogue
-
-Colonnes attendues (1re ligne) : `id, nom, prix, categorie, tag, description`
-
-- Modifier un prix / une description : modifier la ligne du Sheet (l'`id` doit rester identique).
-- Nouveau produit : ajouter une ligne avec un `id` unique en minuscules-avec-tirets (ex. `champagne-rose`). Une page `/produits/champagne-rose/` est créée.
-- Dans la description, un retour à la ligne = un nouveau paragraphe.
-- Le Sheet doit rester **publié sur le web** (*Fichier → Partager → Publier sur le web*, format CSV).
-
-Fonctionnement : les visiteurs voient toujours les prix du Sheet en direct. Google, lui, voit les prix du **dernier déploiement**.
-Pour que les pages indexées se mettent à jour après un changement de prix : *Vercel → Settings → Git → Deploy Hooks*,
-ou simplement relancer un déploiement (*Redeploy*). Un produit tout juste ajouté n'a sa page indexable qu'après un déploiement.
-
-## 4. Après la mise en ligne (20 minutes, très important)
-
-1. **Google Search Console** → ajouter le domaine → *Sitemaps* → envoyer `https://TON-DOMAINE/sitemap.xml`.
-2. *Inspection d'URL* sur la page d'accueil → *Demander une indexation*.
-3. Tester une fiche produit sur https://search.google.com/test/rich-results (doit afficher « Produit » et « Fil d'Ariane »).
-4. Créer/revendiquer la fiche **Google Business Profile** (adresse : 47 rue de la Fontaine, 02310 Domptin) — premier levier de SEO local.
-5. Obtenir des liens depuis : interprofession (champagne.fr), office de tourisme de Château-Thierry, annuaires de vignerons.
-
-## Commandes (si tu travailles en local)
-
-```bash
-npm install
-npm run build        # génère dist/
-```
+## Test local sans réseau
+`SUPABASE_MOCK_DIR=./mock npm run build` avec `mock/products.json` et `mock/events.json`.

@@ -1,4 +1,4 @@
-// Build SEO : pré-rend chaque page en HTML statique (avec le catalogue Google Sheet), génère sitemap.xml, robots.txt, vercel.json.
+// Build SEO : pré-rend chaque page en HTML statique (avec le catalogue et les événements Supabase), génère sitemap.xml, robots.txt, vercel.json.
 // Usage : npm install && npm run build   (variable optionnelle : SITE_URL=https://mon-domaine.fr)
 import fs from "node:fs";
 import path from "node:path";
@@ -8,6 +8,8 @@ import { JSDOM, VirtualConsole } from "jsdom";
 const root = path.dirname(new URL(import.meta.url).pathname);
 const cfg = JSON.parse(fs.readFileSync(path.join(root, "site.config.json"), "utf8"));
 const SITE_URL = (process.env.SITE_URL || cfg.siteUrl).replace(/\/+$/, "");
+const SB_URL = (process.env.SUPABASE_URL || cfg.supabaseUrl || "").replace(/\/+$/, "");
+const SB_KEY = process.env.SUPABASE_KEY || cfg.supabaseKey || "";
 const SRC = path.join(root, "src");
 const DIST = path.join(root, "dist");
 const md5 = (s) => crypto.createHash("md5").update(s).digest("hex").slice(0, 8);
@@ -19,31 +21,38 @@ fs.rmSync(DIST, { recursive: true, force: true });
 fs.mkdirSync(DIST, { recursive: true });
 fs.cpSync(path.join(SRC, "assets"), path.join(DIST, "assets"), { recursive: true });
 fs.cpSync(path.join(SRC, "public"), DIST, { recursive: true });
+const adminJsPath = path.join(DIST, "admin/admin.js");   // l'admin reçoit l'URL et la clé PUBLIQUE Supabase
+if (fs.existsSync(adminJsPath)) fs.writeFileSync(adminJsPath, fs.readFileSync(adminJsPath, "utf8").replaceAll("__SUPABASE_URL__", SB_URL).replaceAll("__SUPABASE_KEY__", SB_KEY));
 
-let js = fs.readFileSync(path.join(SRC, "assets/js/app.js"), "utf8").replaceAll("__SITE_URL__", SITE_URL);
+let js = fs.readFileSync(path.join(SRC, "assets/js/app.js"), "utf8").replaceAll("__SITE_URL__", SITE_URL).replaceAll("__SUPABASE_URL__", SB_URL).replaceAll("__SUPABASE_KEY__", SB_KEY);
 fs.writeFileSync(path.join(DIST, "assets/js/app.js"), js);
 const css = fs.readFileSync(path.join(DIST, "assets/css/style.css"), "utf8");
 const JS_V = md5(js), CSS_V = md5(css);
 const font = (k) => "/assets/fonts/" + fs.readdirSync(path.join(DIST, "assets/fonts")).find((f) => f.startsWith(k + "."));
 
-// ---------- 2. Google Sheet (lu au build pour pré-rendre les vraies données) ----------
-const SHEET = (js.match(/var SHEET_CSV_URL = "([^"]*)"/) || [])[1];
-let csvText = null;
-if (process.env.SHEET_CSV_FILE) {            // mode test local : lit un CSV du disque au lieu de Google
-  csvText = fs.readFileSync(process.env.SHEET_CSV_FILE, "utf8");
-  console.log("✔ Catalogue lu depuis " + process.env.SHEET_CSV_FILE + " (test local)");
-} else if (SHEET) {
+// ---------- 2. Supabase (lu au build pour pré-rendre les vraies données) ----------
+let sbData = null;   // { products: [...], events: [...] }
+if (process.env.SUPABASE_MOCK_DIR) {          // mode test local : lit products.json / events.json du disque
+  const rd = (f) => JSON.parse(fs.readFileSync(path.join(process.env.SUPABASE_MOCK_DIR, f), "utf8"));
+  sbData = { products: rd("products.json"), events: fs.existsSync(path.join(process.env.SUPABASE_MOCK_DIR, "events.json")) ? rd("events.json") : [] };
+  console.log(`✔ Données lues depuis ${process.env.SUPABASE_MOCK_DIR} (test local) : ${sbData.products.length} produits, ${sbData.events.length} événements`);
+} else if (SB_URL && SB_KEY) {
   try {
-    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 20000);
-    const r = await fetch(SHEET, { signal: ctl.signal }); clearTimeout(t);
-    if (!r.ok) throw new Error("HTTP " + r.status);
-    csvText = await r.text();
-    if (/<html/i.test(csvText.slice(0, 200))) throw new Error("le Sheet n'est pas publié en CSV");
-    console.log(`✔ Google Sheet lu (${csvText.split("\n").length - 1} lignes)`);
+    const get = async (q) => {
+      const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 20000);
+      const r = await fetch(`${SB_URL}/rest/v1/${q}`, { headers: { apikey: SB_KEY }, signal: ctl.signal }); clearTimeout(t);
+      if (!r.ok) throw new Error("HTTP " + r.status + " sur " + q.split("?")[0]);
+      return r.json();
+    };
+    const products = await get("products?select=*&order=sort_order.asc");
+    const events = await get(`events?select=*&published=eq.true&starts_at=gte.${encodeURIComponent(new Date().toISOString())}&order=starts_at.asc`);
+    sbData = { products, events };
+    console.log(`✔ Supabase lu : ${products.length} produits, ${events.length} événement(s) à venir`);
   } catch (e) {
-    csvText = null;
-    warn("Google Sheet illisible au build (" + e.message + ") → pages pré-rendues avec les données par défaut du code.");
+    warn("Supabase illisible au build (" + e.message + ") → pages pré-rendues avec les données par défaut du code.");
   }
+} else {
+  warn("Supabase non configuré (supabaseUrl / supabaseKey dans site.config.json) → données par défaut du code.");
 }
 
 // ---------- 3. gabarit ----------
@@ -59,7 +68,11 @@ async function prerender(urlPath) {
     url: SITE_URL + urlPath, runScripts: "dangerously", pretendToBeVisual: true, virtualConsole: vc,
     beforeParse(w) {
       w.scrollTo = () => {};
-      w.fetch = () => csvText ? Promise.resolve({ ok: true, text: () => Promise.resolve(csvText) }) : Promise.reject(new Error("pas de Sheet au build"));
+      w.fetch = (url) => {
+        if (!sbData) return Promise.reject(new Error("pas de données Supabase au build"));
+        const body = String(url).includes("/rest/v1/events") ? sbData.events : sbData.products;
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(body) });
+      };
     },
   });
   const w = dom.window;
@@ -117,7 +130,7 @@ ${indexable.map((r) => {
 </urlset>
 `;
 fs.writeFileSync(path.join(DIST, "sitemap.xml"), sitemap);
-fs.writeFileSync(path.join(DIST, "robots.txt"), `User-agent: *\nAllow: /\nDisallow: /panier/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
+fs.writeFileSync(path.join(DIST, "robots.txt"), `User-agent: *\nAllow: /\nDisallow: /panier/\nDisallow: /admin/\n\nSitemap: ${SITE_URL}/sitemap.xml\n`);
 
 // ---------- 6. vercel.json ----------
 const immutable = "public, max-age=31536000, immutable";
@@ -128,6 +141,7 @@ const vercel = {
   headers: [
     { source: "/assets/(img|fonts|video|css|js)/(.*)", headers: [{ key: "Cache-Control", value: immutable }] },
     { source: "/assets/og/(.*)", headers: [{ key: "Cache-Control", value: "public, max-age=86400" }] },
+    { source: "/admin/(.*)", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "no-store" }] },
     { source: "/(.*)", headers: [
       { key: "X-Content-Type-Options", value: "nosniff" },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

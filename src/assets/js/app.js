@@ -5,7 +5,6 @@
   var SITE_URL = "__SITE_URL__";                    /* remplacé au build (site.config.json) */
   if(SITE_URL.indexOf("__")===0) SITE_URL = location.origin;
   var SITE_NAME = "Ruelle-Dommange";
-  var EVENTS_PUBLISHED = false;   /* passer à true quand les vrais événements remplacent les exemples → la page sera indexée */
   var SOCIAL = [];                /* URLs de vos réseaux sociaux, ex. ["https://www.instagram.com/…","https://www.facebook.com/…"] */
   var DEFAULT_OG = "/assets/og/og-default.jpg";
   var OG_BY_PHOTO = {
@@ -23,15 +22,15 @@
   var MEDIA_DIM = {"/assets/img/etiquetteMockup.07e58ec4.webp": [1100, 618], "/assets/img/giftBag.c62f390f.webp": [788, 900], "/assets/img/weddingToast.1e3b94ea.webp": [788, 900], "/assets/img/eventsBadge.3bedfbd1.webp": [700, 263], "/assets/img/photoBullesVanille.045c4c92.webp": [735, 1100], "/assets/img/photoBullesVanilleRose.6158600e.webp": [734, 1100], "/assets/img/photoBrut.8f2ba26c.webp": [733, 1100], "/assets/img/photoBlancDeBlancs.53316b12.webp": [733, 1100], "/assets/img/photoDemiSec.7e53dff6.webp": [733, 1100], "/assets/img/photoMillesime.8de023d6.webp": [733, 1100], "/assets/img/photoPinkFlower.c13de20e.webp": [600, 900], "/assets/img/photoDemiBouteille.c863b474.webp": [600, 900], "/assets/img/photoMagnum.0e0ad256.webp": [600, 900], "/assets/img/photoRatafia.626eebb0.webp": [600, 900], "/assets/img/aleksandra.f5d598e8.webp": [960, 1200], "/assets/img/crate.8e1a05c6.webp": [801, 1200], "/assets/img/kevin.9a894405.webp": [800, 1200], "/assets/img/lukas.846e4729.webp": [1200, 800], "/assets/img/sven.e3a4fa2a.webp": [1200, 900], "/assets/img/rodrigo1.ec54fb63.webp": [800, 1200], "/assets/img/rodrigo2.f5b6cedd.webp": [800, 1200], "/assets/img/bottleIllustration.c6bb231c.webp": [309, 882]};
 
   /* ---------------- DATA ---------------- */
-  /* ---------------- CMS (Google Sheet) CONFIG ----------------
-     Pour brancher le catalogue sur un Google Sheet géré par la cliente :
-     1. Créer un Google Sheet avec les colonnes : id, nom, prix, categorie, tag, description
-        (le fichier catalogue-ruelle-dommange.csv fourni sert de point de départ à importer)
-     2. Fichier > Partager > Publier sur le web > choisir l'onglet > format CSV > Publier
-     3. Coller l'URL obtenue ci-dessous (celle qui se termine par output=csv)
-     Tant que cette URL est vide, le site utilise les données par défaut codées ci-dessous.
-     ✔ Branché : le catalogue est lu au build (pages pré-rendues pour Google) ET au chargement (prix à jour). */
-  var SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTM2BPI4FLqndsQIM8Wwoob9T8hbp9hM6yfb40UoDt-bWUeEgbk_j-yANZ4H1-ioe0z8lEIj73hi54O/pub?output=csv";
+  /* ---------------- CMS (Supabase) ----------------
+     Produits, prix, stock et événements sont gérés par la cliente depuis /admin/ (base Supabase).
+     Remplacés au build (site.config.json). Seule la clé PUBLIQUE (publishable) est ici :
+     les droits d'écriture sont protégés côté Supabase (RLS), jamais par cette clé.
+     Les données sont lues au build (pages pré-rendues pour Google) ET au chargement (prix et stock à jour).
+     Si Supabase est injoignable, le site affiche les données par défaut codées ci-dessous. */
+  var SUPABASE_URL = "__SUPABASE_URL__";
+  var SUPABASE_KEY = "__SUPABASE_KEY__";
+  if(SUPABASE_URL.indexOf("__")===0){ SUPABASE_URL = ""; SUPABASE_KEY = ""; }
 
   var DEFAULT_PRODUCTS = [
     {id:"blanc-de-blancs", photo:"photoBlancDeBlancs", name:"Blanc de blancs", accent:"blancs", price:22.90, cat:"Bouteille 75cl", tag:"Nos champagnes",
@@ -167,103 +166,81 @@
 
   var PRODUCTS = DEFAULT_PRODUCTS.slice();
 
-  /* ---------------- CSV PARSER (gère les champs entre guillemets, virgules et retours à la ligne) ---------------- */
-  function parseCSV(text){
-    var rows = [];
-    var row = [];
-    var field = "";
-    var inQuotes = false;
-    for(var i=0;i<text.length;i++){
-      var c = text[i];
-      if(inQuotes){
-        if(c === '"'){
-          if(text[i+1] === '"'){ field += '"'; i++; }
-          else { inQuotes = false; }
-        } else { field += c; }
-      } else {
-        if(c === '"'){ inQuotes = true; }
-        else if(c === ','){ row.push(field); field = ""; }
-        else if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ""; }
-        else if(c === '\r'){ /* ignore */ }
-        else { field += c; }
-      }
-    }
-    if(field.length || row.length){ row.push(field); rows.push(row); }
-    if(!rows.length) return [];
-    var headers = rows[0].map(function(h){ return h.trim().toLowerCase(); });
-    var out = [];
-    for(var r=1;r<rows.length;r++){
-      if(rows[r].length===1 && rows[r][0]==="") continue;
-      var obj = {};
-      headers.forEach(function(h,idx){ obj[h] = (rows[r][idx]||"").trim(); });
-      out.push(obj);
-    }
-    return out;
+  /* ---------------- DONNÉES SUPABASE ---------------- */
+  function sbGet(path){
+    return fetch(SUPABASE_URL + "/rest/v1/" + path, {headers:{apikey:SUPABASE_KEY}, cache:"no-cache"})
+      .then(function(res){ if(!res.ok) throw new Error("supabase " + res.status); return res.json(); });
   }
-
-  /* ---------------- Fusionne les lignes du Google Sheet avec les produits par défaut ---------------- */
-  function mergeSheetProducts(rows){
-    rows.forEach(function(row){
-      if(!row.id) return;
-      var existing = PRODUCTS.find(function(p){ return p.id === row.id; });
-      var descParagraphs = row.description ? row.description.split(/\n+/).filter(Boolean) : null;
-      if(existing){
-        if(row.nom) existing.name = row.nom;
-        if(row.prix) existing.price = parseFloat(row.prix.replace(",", "."));
-        if(row.categorie) existing.cat = row.categorie;
-        if(row.tag) existing.tag = row.tag;
-        if(descParagraphs) existing.desc = descParagraphs;
-      } else {
-        PRODUCTS.push({
-          id: row.id,
-          name: row.nom || row.id,
-          price: row.prix ? parseFloat(row.prix.replace(",", ".")) : 0,
-          cat: row.categorie || "Bouteille 75cl",
-          tag: row.tag || row.categorie || "Nos champagnes",
-          desc: descParagraphs || [],
-          bottleColor:"#e7d9a8"
-        });
+  function escHtml(t){
+    return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+  /* Construit la liste des produits : la base fait foi ; les fiches détaillées codées (spécifications, notes…) sont conservées pour les produits existants */
+  function applyProducts(rows){
+    var base = {};
+    DEFAULT_PRODUCTS.forEach(function(p){ base[p.id] = p; });
+    PRODUCTS = rows.filter(function(r){ return r && r.id; }).map(function(r){
+      var d = base[r.id];
+      var p = d ? Object.assign({}, d) : {accent:"", region:"Champagne, France", specs:[], notes:[], bottleColor:"#e7d9a8"};
+      p.id = r.id;
+      p.name = r.name || r.id;
+      p.price = (r.price_cents || 0) / 100;
+      p.cat = r.category || "Bouteille 75cl";
+      p.tag = r.tag || p.cat;
+      var paras = (r.description || "").split(/\n+/).filter(Boolean);
+      p.desc = paras.length ? paras : (p.desc || []);
+      if(Array.isArray(r.specs) && r.specs.length) p.specs = r.specs;
+      if(Array.isArray(r.notes) && r.notes.length) p.notes = r.notes;
+      p.stock = (r.stock === null || r.stock === undefined) ? null : r.stock;
+      if(r.photo_url){
+        var key = null;
+        Object.keys(MEDIA).forEach(function(k){ if(MEDIA[k] === r.photo_url) key = k; });
+        if(key){ p.photo = key; p.photoUrl = null; } else { p.photoUrl = r.photo_url; p.photo = null; }
       }
+      return p;
+    });
+  }
+  function applyEvents(rows){
+    var fmt = new Intl.DateTimeFormat("fr-FR", {timeZone:"Europe/Paris", day:"2-digit", month:"long", year:"numeric", hour:"2-digit", minute:"2-digit", hourCycle:"h23"});
+    EVENTS = rows.filter(function(r){ return r && r.starts_at; }).map(function(r){
+      var o = {};
+      fmt.formatToParts(new Date(r.starts_at)).forEach(function(x){ o[x.type] = x.value; });
+      var monthShort = o.month.length > 4 ? o.month.slice(0,3) + "." : o.month;
+      return {
+        title: escHtml(r.title), place: escHtml(r.place), address: escHtml(r.address || r.place), text: escHtml(r.text),
+        image: r.image_url ? escHtml(r.image_url) : null,
+        day: o.day, month: monthShort,
+        date: o.day + " " + o.month.charAt(0).toUpperCase() + o.month.slice(1) + " " + o.year,
+        time: o.hour + "h" + o.minute
+      };
     });
   }
 
-  function loadProductsFromSheet(){
-    if(!SHEET_CSV_URL){ sheetState = "done"; if(window.__rdResolve) window.__rdResolve(); return; }
-    fetch(SHEET_CSV_URL, {cache:"no-cache"})
-      .then(function(res){ if(!res.ok) throw new Error("network"); return res.text(); })
-      .then(function(text){
-        var rows = parseCSV(text);
-        if(rows.length){
-          mergeSheetProducts(rows);
-          sheetState = "done";
-          if(productsSig() !== app.getAttribute("data-sig") || app.getAttribute("data-route")!==routeSig(resolveRoute())){
-            render({keepScroll:true});
-          } else { setSEO(resolveRoute().route, findProduct(resolveRoute().id)); }
-        }
-      })
-      .catch(function(err){
-        console.warn("Catalogue Google Sheet indisponible, affichage des données par défaut.", err);
-      })
-      .then(function(){
-        if(sheetState==="pending"){ sheetState = "done"; render({keepScroll:true}); }
-        if(window.__rdResolve) window.__rdResolve();
-      });
+  function loadFromSupabase(){
+    if(!SUPABASE_URL){ dataState = "done"; if(window.__rdResolve) window.__rdResolve(); return; }
+    var nowIso = new Date().toISOString();
+    Promise.all([
+      sbGet("products?select=*&order=sort_order.asc").catch(function(err){ console.warn("Catalogue Supabase indisponible, données par défaut.", err); return null; }),
+      sbGet("events?select=*&published=eq.true&starts_at=gte." + encodeURIComponent(nowIso) + "&order=starts_at.asc").catch(function(err){ console.warn("Événements Supabase indisponibles.", err); return null; })
+    ]).then(function(res){
+      var ok = false;
+      if(res[0] && res[0].length){ applyProducts(res[0]); ok = true; }
+      if(res[1]){ applyEvents(res[1]); ok = true; }
+      var wasPending = dataState === "pending";
+      dataState = "done";
+      if(ok && (productsSig() !== app.getAttribute("data-sig") || app.getAttribute("data-route") !== routeSig(resolveRoute()))){
+        render({keepScroll:true});
+      } else if(wasPending){
+        render({keepScroll:true});
+      } else { setSEO(resolveRoute().route, findProduct(resolveRoute().id)); }
+    }).catch(function(err){
+      console.warn("Chargement des données impossible.", err);
+      if(dataState === "pending"){ dataState = "done"; render({keepScroll:true}); }
+    }).then(function(){
+      if(window.__rdResolve) window.__rdResolve();
+    });
   }
 
-  var EVENTS = [
-    {title:"Salon de dégustation de vin de Thulin", place:"Thulin 7350", date:"02 Mars", time:"16h00", day:"01", month:"mai", address:"Rue Ferrer n°20, Thulin 7350",
-      text:"Un grain de folie, un peu d'imagination, telle est l'histoire de ce produit unique et exceptionnel."},
-    {title:"Exposition de vin & spiritueux", place:"Thulin 7350", date:"02 Mars", time:"16h00", day:"01", month:"mai", address:"Adresse de l'événement, Thulin 7350",
-      text:"Un grain de folie, un peu d'imagination, telle est l'histoire de ce produit unique et exceptionnel."},
-    {title:"Salon de dégustation de vin de Thulin", place:"Thulin 7350", date:"02 Mars", time:"16h00", day:"01", month:"mai", address:"Adresse de l'événement, Thulin 7350",
-      text:"Un grain de folie, un peu d'imagination, telle est l'histoire de ce produit unique et exceptionnel."},
-    {title:"Salon de dégustation de vin de Thulin", place:"Thulin 7350", date:"02 Mars", time:"16h00", day:"01", month:"mai", address:"Adresse de l'événement, Thulin 7350",
-      text:"Un grain de folie, un peu d'imagination, telle est l'histoire de ce produit unique et exceptionnel."},
-    {title:"Salon de dégustation de vin de Thulin", place:"Thulin 7350", date:"02 Mars", time:"16h00", day:"01", month:"mai", address:"Adresse de l'événement, Thulin 7350",
-      text:"Un grain de folie, un peu d'imagination, telle est l'histoire de ce produit unique et exceptionnel."},
-    {title:"Salon de dégustation de vin de Thulin", place:"Thulin 7350", date:"02 Mars", time:"16h00", day:"01", month:"mai", address:"Adresse de l'événement, Thulin 7350",
-      text:"Un grain de folie, un peu d'imagination, telle est l'histoire de ce produit unique et exceptionnel."}
-  ];
+  var EVENTS = [];   /* alimenté par Supabase (table events) */
 
   var FAQ = [
     {q:"Où sont élaborés vos champagnes ?", a:"Nos produits sont élaborés avec passion dans le respect du savoir-faire traditionnel champenois."},
@@ -316,8 +293,10 @@
     document.getElementById("cartCount").textContent = n;
   }
   function addToCart(id, qty){
+    var pr = findProduct(id); var max = (pr && pr.stock!=null) ? pr.stock : 999;
+    if(max <= 0){ showToast("Produit épuisé"); return; }
     var existing = cart.find(function(i){return i.id===id;});
-    if(existing){ existing.qty += qty; } else { cart.push({id:id, qty:qty}); }
+    if(existing){ existing.qty = Math.min(max, existing.qty + qty); } else { cart.push({id:id, qty:Math.min(max, qty)}); }
     saveCart();
     showToast("Ajouté au panier");
   }
@@ -328,7 +307,7 @@
   }
   function setQty(id, qty){
     var it = cart.find(function(i){return i.id===id;});
-    if(it){ it.qty = Math.max(1, qty); saveCart(); render({keepScroll:true}); }
+    if(it){ var pr = findProduct(id); it.qty = Math.max(1, (pr && pr.stock!=null) ? Math.min(pr.stock, qty) : qty); saveCart(); render({keepScroll:true}); }
   }
 
   var toastTimer;
@@ -383,6 +362,11 @@
       '<text x="40" y="70" font-family="Georgia, serif" font-size="8" fill="#d7d48f" text-anchor="middle">CHAMPAGNE</text>'+
       '</g></svg>';
   }
+  function eventImg(e,i){ return e.image || eventPhoto(i); }
+  function emptyEvents(){
+    return '<div class="center" style="padding:30px 0 20px;"><p class="lede">Aucun événement n\'est programmé pour le moment. Revenez bientôt, ou contactez-nous pour organiser une dégustation.</p>'+
+      '<div class="cta-row"><a href="/contact/" class="btn">Nous contacter</a> <a href="/produits/" class="btn btn-outline">Voir nos champagnes</a></div></div>';
+  }
   function eventPhoto(i){
     var arr = [MEDIA.kevin, MEDIA.rodrigo1, MEDIA.rodrigo2, MEDIA.crate];
     return arr[i % arr.length];
@@ -432,7 +416,7 @@
   }
   function routeSig(r){ return r.route==="product" ? "product:"+r.id : r.route; }
   function productsSig(){
-    var s = JSON.stringify(PRODUCTS.map(function(p){return [p.id,p.name,p.price,p.cat,p.tag,p.desc];}));
+    var s = JSON.stringify([PRODUCTS.map(function(p){return [p.id,p.name,p.price,p.cat,p.tag,p.desc,p.stock,p.photo,p.photoUrl];}), EVENTS.map(function(e){return [e.title,e.date,e.time,e.place,e.address,e.text,e.image];})]);
     var h = 5381; for(var i=0;i<s.length;i++){ h = ((h<<5)+h + s.charCodeAt(i)) | 0; }
     return String(h);
   }
@@ -444,7 +428,7 @@
       '<div class="cta-row"><a href="/produits/" class="btn">Voir nos champagnes</a> <a href="/" class="btn btn-outline">Retour à l\'accueil</a></div>'+
     '</section></div>';
   }
-  var sheetState = SHEET_CSV_URL ? "pending" : "done";
+  var dataState = SUPABASE_URL ? "pending" : "done";
 
   function render(opts){
     opts = (opts && opts.constructor===Object) ? opts : {};
@@ -456,7 +440,7 @@
     if(r.route==="product"){
       p = findProduct(r.id);
       if(!p){
-        if(sheetState==="pending"){          /* produit peut-être ajouté dans le Sheet : on attend le chargement */
+        if(dataState==="pending"){          /* produit peut-être ajouté depuis l'admin : on attend le chargement */
           app.innerHTML = '<div class="wrap"><section class="section center"><p class="lede">Chargement…</p></section></div>';
           navActive("/produits"); return;
         }
@@ -485,18 +469,20 @@
     updateCartCount();
   }
 
-  /* Instantané du catalogue embarqué dans chaque page pré-rendue : le site reste complet même si le Google Sheet est injoignable */
+  /* Instantané du catalogue embarqué dans chaque page pré-rendue : le site reste complet même si Supabase est injoignable */
   function writeCatalogSnapshot(){
     var el = document.getElementById("rd-catalog");
     if(!el){ el = document.createElement("script"); el.type = "application/json"; el.id = "rd-catalog"; document.body.appendChild(el); }
-    el.textContent = JSON.stringify(PRODUCTS).replace(/</g,"\\u003c");
+    el.textContent = JSON.stringify({p:PRODUCTS, e:EVENTS}).replace(/</g,"\\u003c");
   }
   function readCatalogSnapshot(){
     var el = document.getElementById("rd-catalog");
     if(!el) return;
     try{
-      var arr = JSON.parse(el.textContent);
+      var snap = JSON.parse(el.textContent);
+      var arr = Array.isArray(snap) ? snap : snap.p;
       if(Array.isArray(arr) && arr.length){ PRODUCTS.length = 0; arr.forEach(function(x){ PRODUCTS.push(x); }); }
+      if(snap && Array.isArray(snap.e)) EVENTS = snap.e;
     }catch(e){}
   }
 
@@ -547,7 +533,7 @@
     "/etiquette": {title:"Étiquette de champagne personnalisée | Ruelle-Dommange",
                    desc:"Personnalisez l'étiquette de votre champagne pour un mariage, un baptême, un anniversaire ou un événement d'entreprise. Une bouteille unique Ruelle-Dommange.", type:"WebPage", crumb:"Création d'étiquette"},
     "/evenements":{title:"Événements et salons de dégustation | Ruelle-Dommange",
-                   desc:"Retrouvez Ruelle-Dommange lors de salons et de dégustations de vin et de champagne.", type:"WebPage", crumb:"Événements", noindex:!EVENTS_PUBLISHED},
+                   desc:"Retrouvez Ruelle-Dommange lors de salons et de dégustations de vin et de champagne.", type:"WebPage", crumb:"Événements", noindex:false},
     "/apropos":   {title:"Quatre générations de vignerons à Domptin | Ruelle-Dommange",
                    desc:"Exploitation familiale à Domptin, près de Château-Thierry : trois hectares de vignes, quatre générations de vignerons, Chardonnay, Pinot Noir et Pinot Meunier.", type:"AboutPage", crumb:"À propos"},
     "/contact":   {title:"Contact et visite de l'exploitation | Ruelle-Dommange",
@@ -580,7 +566,7 @@
     return {title:title, desc:desc};
   }
   function productImageUrl(p){
-    var src = (p.photo && MEDIA[p.photo]) ? MEDIA[p.photo] : MEDIA.bottleIllustration;
+    var src = (p.photo && MEDIA[p.photo]) ? MEDIA[p.photo] : (p.photoUrl || MEDIA.bottleIllustration);
     return absUrl(src);
   }
   function upsertMeta(attr, key, content){
@@ -633,7 +619,7 @@
         "sku":p.id, "category":p.cat, "image":[productImageUrl(p)],
         "brand":{"@type":"Brand","name":SITE_NAME},
         "offers":{"@type":"Offer","url":canonical,"priceCurrency":"EUR","price":p.price.toFixed(2),
-                  "availability":"https://schema.org/InStock","itemCondition":"https://schema.org/NewCondition",
+                  "availability":(p.stock===0?"https://schema.org/OutOfStock":"https://schema.org/InStock"),"itemCondition":"https://schema.org/NewCondition",
                   "seller":{"@id":SITE_URL+"/#winery"}}
       });
     }
@@ -647,6 +633,7 @@
   function setSEO(routeKey, p){
     var seo = (routeKey==="product" && p) ? productSEO(p) : (PAGE_SEO[routeKey] || PAGE_SEO["404"]);
     var noindex = (routeKey==="product") ? false : !!(PAGE_SEO[routeKey] && PAGE_SEO[routeKey].noindex);
+    if(routeKey==="/evenements" && !EVENTS.length) noindex = true;   /* page indexée seulement s'il y a de vrais événements à venir */
     var canonical = null;
     if(routeKey==="product") canonical = SITE_URL + "/produits/" + p.id + "/";
     else if(routeKey!=="404") canonical = SITE_URL + ROUTE_TO_URL[routeKey];
@@ -657,7 +644,7 @@
     upsertLink("canonical", canonical);
 
     var img = DEFAULT_OG;
-    if(routeKey==="product"){ img = (p.photo && OG_BY_PHOTO[p.photo]) ? OG_BY_PHOTO[p.photo] : DEFAULT_OG; }
+    if(routeKey==="product"){ img = (p.photo && OG_BY_PHOTO[p.photo]) ? OG_BY_PHOTO[p.photo] : (p.photoUrl || DEFAULT_OG); }
     upsertMeta("property","og:type", routeKey==="product" ? "product" : "website");
     upsertMeta("property","og:site_name", SITE_NAME);
     upsertMeta("property","og:locale","fr_FR");
@@ -728,16 +715,16 @@
       '</div>'+
     '</div></section>'+
 
-    '<section class="section" style="padding-top:0;"><div class="wrap center">'+
+    (EVENTS.length ?     '<section class="section" style="padding-top:0;"><div class="wrap center">'+
       '<h2 class="eyebrow-title">Venez à nos futurs <em>événements</em></h2>'+
       '<p class="lede">Retrouvez-nous lors de dégustations, salons et événements afin de découvrir notre univers, nos produits et notre passion du champagne.</p>'+
       '<div class="events-grid" style="text-align:left;">'+ EVENTS.slice(0,4).map(function(e,i){
-        return '<div class="event-card"><div class="event-thumb"><img src="'+eventPhoto(i)+'" alt="'+e.title+'" loading="lazy" style="width:100%;height:100%;object-fit:cover;"></div>'+
+        return '<div class="event-card"><div class="event-thumb"><img src="'+eventImg(e,i)+'" alt="'+e.title+'" loading="lazy" style="width:100%;height:100%;object-fit:cover;"></div>'+
           '<div class="event-meta"><span>'+metaIcon("pin")+' '+e.place+'</span><span>'+metaIcon("calendar")+' '+e.date+'</span><span>'+metaIcon("clock")+' '+e.time+'</span></div>'+
           '<h4>'+e.title+'</h4><p>'+e.text+'</p>'+
           '<a href="/evenements/" class="more">En savoir plus...</a></div>';
       }).join("") +'</div>'+
-    '</div></section>'+
+    '</div></section>' : '')+
 
     '<section class="section section-dark"><div class="wrap">'+
       '<div class="divider-title"><h2 class="eyebrow-title"><em>Découvrez</em> notre processus</h2><span class="rule"></span></div>'+
@@ -763,6 +750,9 @@
   function productImg(p){
     if(p.photo && MEDIA[p.photo]){
       return '<img src="'+MEDIA[p.photo]+'" alt="'+productAlt(p)+'" loading="lazy">';
+    }
+    if(p.photoUrl){
+      return '<img src="'+p.photoUrl+'" alt="'+productAlt(p)+'" loading="lazy">';
     }
     return '<img src="'+MEDIA.bottleIllustration+'" alt="'+productAlt(p)+'" loading="lazy">';
   }
@@ -914,7 +904,7 @@
                 '<span id="qtyVal">1</span>'+
                 '<button id="qtyPlus" aria-label="Augmenter">+</button>'+
               '</div>'+
-              '<button class="btn" id="addToCartBtn">Ajouter au panier</button>'+
+              (p.stock===0 ? '<button class="btn" id="addToCartBtn" disabled style="opacity:.5;cursor:not-allowed;">Épuisé</button>' : '<button class="btn" id="addToCartBtn">Ajouter au panier</button>')+
             '</div>'+
             '<p class="added-msg" id="addedMsg">Ajouté à votre panier avec succès.</p>'+
           '</div>'+
@@ -940,7 +930,8 @@
       qty = Math.max(1, qty-1); qtyVal.textContent = qty;
     });
     document.getElementById("qtyPlus").addEventListener("click", function(){
-      qty = qty+1; qtyVal.textContent = qty;
+      var pr = findProduct(id); var max = (pr && pr.stock!=null) ? Math.max(1, pr.stock) : 99;
+      qty = Math.min(max, qty+1); qtyVal.textContent = qty;
     });
     document.getElementById("addToCartBtn").addEventListener("click", function(){
       addToCart(id, qty);
@@ -958,23 +949,18 @@
         '<p class="lede">Viticulteur de champagne de père en fils, nous vous offrons une gamme de produits de qualité à des prix défiant toute concurrence.</p>'+
       '</section>'+
       '<section style="padding-bottom:70px;">'+
-        EVENTS.map(function(e,i){
+        (EVENTS.length ?         EVENTS.map(function(e,i){
           return '<div class="event-row">'+
             '<div class="date-badge"><div class="d">'+e.day+'</div><div class="m">'+e.month+'</div></div>'+
             '<div><div class="event-meta"><span>'+metaIcon("pin")+' '+e.place+'</span><span>'+metaIcon("calendar")+' '+e.date+'</span><span>'+metaIcon("clock")+' '+e.time+'</span></div>'+
               '<h4 style="font-size:1.3rem;">'+e.title+'</h4>'+
               '<p style="margin-bottom:6px;">'+e.address+'</p>'+
               '<p>'+e.text+' <a href="/contact/" class="more">En savoir plus...</a></p>'+
-              '<button class="btn" style="margin-top:14px;" onclick="window.__rdToast()">Voir l\'événement</button>'+
+              '<a class="btn" style="margin-top:14px;display:inline-block;" href="/contact/">Nous contacter</a>'+
             '</div>'+
-            '<div class="er-media"><img src="'+eventPhoto(i)+'" alt="'+e.title+'" loading="lazy" style="width:100%;height:100%;object-fit:cover;"></div>'+
+            '<div class="er-media"><img src="'+eventImg(e,i)+'" alt="'+e.title+'" loading="lazy" style="width:100%;height:100%;object-fit:cover;"></div>'+
           '</div>';
-        }).join("")+
-        '<div class="pagination">'+
-          '<button aria-label="Page précédente"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M15 18l-6-6 6-6"/></svg></button>'+
-          '<div class="page-nums"><span class="active">1</span><span>2</span><span>3</span></div>'+
-          '<button aria-label="Page suivante"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 6l6 6-6 6"/></svg></button>'+
-        '</div>'+
+        }).join("") : emptyEvents())+
       '</section>'+
     '</div>';
   });
@@ -1161,9 +1147,9 @@
       var p = PRODUCTS.find(function(x){return x.id===item.id;});
       return s + (p ? p.price*item.qty : 0);
     },0);
-    var tva = subtotal*0.20;
     var shipping = subtotal >= 100 ? 0 : 5.90;
-    var total = subtotal+tva+shipping;
+    var total = subtotal+shipping;              /* prix affichés TTC */
+    var tva = total*20/120;                      /* TVA 20 % incluse */
     return '<div class="wrap"><section class="section">'+
       '<h1 class="eyebrow-title">Panier <em>d\'achat</em></h1>'+
       '<div class="cart-grid">'+
@@ -1172,9 +1158,9 @@
         '<div class="summary-box">'+
           '<h3>Résumé de la commande</h3>'+
           '<div class="summary-line"><span>Sous-total</span><span>'+euro(subtotal)+'</span></div>'+
-          '<div class="summary-line"><span>TVA (20%)</span><span>'+euro(tva)+'</span></div>'+
           '<div class="summary-line"><span>Frais de livraison</span><span>'+(shipping===0?"Offerts":euro(shipping))+'</span></div>'+
-          '<div class="summary-total"><span>Total</span><span>'+euro(total)+'</span></div>'+
+          '<div class="summary-total"><span>Total TTC</span><span>'+euro(total)+'</span></div>'+
+          '<div class="summary-line"><span>dont TVA (20 %)</span><span>'+euro(tva)+'</span></div>'+
           '<p class="small">Nous restons disponible pour toutes éventuelles questions. Pour nous contacter, remplissez ce formulaire de contact et nous vous y répondrons le plus vite possible.</p>'+
           '<button class="btn" style="width:100%;" id="checkoutBtn">Procéder au paiement</button>'+
         '</div>'+
@@ -1252,6 +1238,6 @@
     pages:["/","/produits","/etiquette","/evenements","/apropos","/contact","/panier"], urls:ROUTE_TO_URL
   };
   render({hydrate:prerendered, keepScroll:true});
-  loadProductsFromSheet();
+  loadFromSupabase();
   updateCartCount();
 })();
