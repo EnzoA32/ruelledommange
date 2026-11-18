@@ -249,6 +249,7 @@
     {q:"Peut-on personnaliser certaines bouteilles ?", a:"Nous proposons la personnalisation d'étiquettes pour certaines cuvées afin de rendre vos événements encore plus uniques."}
   ];
 
+  function isVanille(p){ return /vanille/i.test((p && p.cat) || ""); }   /* Bulles de Vanille = gamme distincte, jamais mélangée aux champagnes */
   var CATEGORIES = ["Tous les produits","Bouteille 75cl","Bulles de Vanille","Coffret","Demi-Bouteille","Magnum","Ratafia","Merchandising"];
 
   var MEDIA = {
@@ -390,7 +391,7 @@
   function route(path, fn){ routes[path]=fn; }
   var app = document.getElementById("app");
 
-  var ROUTE_TO_URL = {"/":"/","/produits":"/produits/","/evenements":"/evenements/","/etiquette":"/creation-etiquette/","/apropos":"/a-propos/","/contact":"/contact/","/panier":"/panier/"};
+  var ROUTE_TO_URL = {"/":"/","/produits":"/produits/","/bulles-de-vanille":"/bulles-de-vanille/","/mentions-legales":"/mentions-legales/","/cgv":"/cgv/","/confidentialite":"/confidentialite/","/evenements":"/evenements/","/etiquette":"/creation-etiquette/","/apropos":"/a-propos/","/contact":"/contact/","/panier":"/panier/"};
   var URL_TO_ROUTE = {};
   Object.keys(ROUTE_TO_URL).forEach(function(k){ URL_TO_ROUTE[ROUTE_TO_URL[k]] = k; });
 
@@ -413,6 +414,8 @@
       a.classList.toggle("active", on);
       if(on) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current");
     });
+    var parent = document.querySelector("[data-nav-parent]");
+    if(parent) parent.classList.toggle("active", key==="/produits" || key==="/bulles-de-vanille");
   }
   function routeSig(r){ return r.route==="product" ? "product:"+r.id : r.route; }
   function productsSig(){
@@ -450,7 +453,7 @@
     if(r.route==="product"){
       if(!hydrate) app.innerHTML = pageProduit(p.id);
       bindProduit(p.id);
-      navActive("/produits");
+      navActive(isVanille(p) ? "/bulles-de-vanille" : "/produits");
     } else if(r.route==="404"){
       if(!hydrate) app.innerHTML = notFoundPage();
       navActive("");
@@ -528,8 +531,16 @@
   var PAGE_SEO = {
     "/":          {title:"Champagne Ruelle-Dommange | Vignerons à Domptin",
                    desc:"Champagne de vignerons à Domptin, vallée de la Marne : Brut, Blanc de blancs, Millésime, Bulles de Vanille. Quatre générations de savoir-faire. Vente en ligne.", type:"WebPage"},
-    "/produits":  {title:"Nos champagnes, magnums & Bulles de Vanille | Ruelle-Dommange",
-                   desc:"Toute la gamme Ruelle-Dommange : champagne Brut, Blanc de blancs, Demi-sec, Millésime, magnum, ratafia et Bulles de Vanille. Livraison offerte dès 100 €.", type:"CollectionPage", crumb:"Nos produits"},
+    "/produits":  {title:"Nos champagnes, magnum & ratafia | Ruelle-Dommange",
+                   desc:"La gamme de champagnes Ruelle-Dommange : Brut, Blanc de blancs, Demi-sec, Millésime, Pink Flower, magnum et ratafia. Livraison offerte dès 100 €.", type:"CollectionPage", crumb:"Nos produits"},
+    "/bulles-de-vanille": {title:"Bulles de Vanille, une création Ruelle-Dommange",
+                   desc:"Découvrez les Bulles de Vanille et Bulles de Vanille Rosé : une création originale de Ruelle-Dommange à Domptin, distincte de nos champagnes.", type:"CollectionPage", crumb:"Bulles de Vanille", noindex:false},
+    "/mentions-legales": {title:"Mentions légales | Ruelle-Dommange",
+                   desc:"Mentions légales du site Ruelle-Dommange : éditeur, hébergeur, propriété intellectuelle, responsabilité et droit applicable.", type:"WebPage", crumb:"Mentions légales", noindex:false},
+    "/cgv":       {title:"Conditions générales de vente | Ruelle-Dommange",
+                   desc:"Conditions générales de vente de Ruelle-Dommange : commande, prix, paiement, livraison, droit de rétractation, garanties et médiation de la consommation.", type:"WebPage", crumb:"Conditions générales de vente", noindex:false},
+    "/confidentialite": {title:"Confidentialité et cookies | Ruelle-Dommange",
+                   desc:"Politique de confidentialité et de cookies de Ruelle-Dommange : données collectées, finalités, durées de conservation et exercice de vos droits (RGPD).", type:"WebPage", crumb:"Confidentialité et cookies", noindex:false},
     "/etiquette": {title:"Étiquette de champagne personnalisée | Ruelle-Dommange",
                    desc:"Personnalisez l'étiquette de votre champagne pour un mariage, un baptême, un anniversaire ou un événement d'entreprise. Une bouteille unique Ruelle-Dommange.", type:"WebPage", crumb:"Création d'étiquette"},
     "/evenements":{title:"Événements et salons de dégustation | Ruelle-Dommange",
@@ -596,8 +607,9 @@
     if(routeKey==="404") return g;
 
     var page = {"@type":(PAGE_SEO[routeKey]||PAGE_SEO["/"]).type, "@id":canonical+"#webpage", "url":canonical, "name":seo.title, "description":seo.desc, "inLanguage":"fr-FR", "isPartOf":{"@id":SITE_URL+"/#website"}, "about":{"@id":SITE_URL+"/#winery"}};
-    if(routeKey==="/produits"){
-      page.mainEntity = {"@type":"ItemList","itemListElement":PRODUCTS.map(function(x,i){
+    if(routeKey==="/produits" || routeKey==="/bulles-de-vanille"){
+      var fam = PRODUCTS.filter(function(x){ return isVanille(x) === (routeKey==="/bulles-de-vanille"); });
+      page.mainEntity = {"@type":"ItemList","itemListElement":fam.map(function(x,i){
         return {"@type":"ListItem","position":i+1,"url":SITE_URL+"/produits/"+x.id+"/","name":x.name};
       })};
     }
@@ -605,7 +617,9 @@
 
     var crumbs = [{"@type":"ListItem","position":1,"name":"Accueil","item":SITE_URL+"/"}];
     if(routeKey==="product"){
-      crumbs.push({"@type":"ListItem","position":2,"name":"Nos produits","item":SITE_URL+"/produits/"});
+      crumbs.push(isVanille(p)
+        ? {"@type":"ListItem","position":2,"name":"Bulles de Vanille","item":SITE_URL+"/bulles-de-vanille/"}
+        : {"@type":"ListItem","position":2,"name":"Nos champagnes","item":SITE_URL+"/produits/"});
       crumbs.push({"@type":"ListItem","position":3,"name":p.name,"item":canonical});
     } else if(routeKey!=="/" && PAGE_SEO[routeKey]){
       crumbs.push({"@type":"ListItem","position":2,"name":PAGE_SEO[routeKey].crumb,"item":canonical});
@@ -677,7 +691,7 @@
 
   /* ---------------- PAGE: HOME ---------------- */
   route("/", function(){
-    var featured = PRODUCTS.slice(0,8);
+    var featured = PRODUCTS.filter(function(x){ return !isVanille(x); }).slice(0,8);
     return ''+
     '<section class="hero">'+
       '<video class="hero-video" autoplay muted loop playsinline preload="metadata" aria-hidden="true" tabindex="-1" poster="'+MEDIA.sven+'"><source src="'+HERO_VIDEO+'" type="video/mp4"></video>'+
@@ -713,6 +727,7 @@
         '<div class="feature-card vanille" style="background-image:linear-gradient(180deg, rgba(10,10,4,.25), rgba(8,8,4,.86)), url(' + MEDIA.crate + ');background-size:cover;background-position:center;"><h3>Bulles de Vanille</h3><p>Une création originale née d\'un grain de folie et d\'une envie d\'innover autour du champagne. Une expérience surprenante mêlant finesse et notes gourmandes de vanille.</p><a href="/produits/bulles-de-vanille/" class="btn">Voir le produit</a></div>'+
         '<div class="feature-card rose" style="background-image:linear-gradient(180deg, rgba(10,10,4,.25), rgba(8,8,4,.86)), url(' + MEDIA.aleksandra + ');background-size:cover;background-position:center;"><h3>Bulles de Vanille Rosé</h3><p>Une version rosée tout en douceur et en fraîcheur, pensée pour offrir une dégustation originale et raffinée.</p><a href="/produits/bulles-de-vanille-rose/" class="btn">Voir le produit</a></div>'+
       '</div>'+
+      '<div class="see-all-row"><a href="/bulles-de-vanille/" class="btn btn-outline">Découvrir les Bulles de Vanille</a></div>'+
     '</div></section>'+
 
     (EVENTS.length ?     '<section class="section" style="padding-top:0;"><div class="wrap center">'+
@@ -811,29 +826,232 @@
   }
 
   /* ---------------- PAGE: PRODUITS (liste) ---------------- */
+  /* ---------------- PAGES LÉGALES ---------------- */
+  /* Les informations de l'entreprise viennent de site.config.json > "legal" (injectées au build). Tout champ vide s'affiche en jaune « À compléter ». */
+  var LEGAL = {};/*__LEGAL__*/
+  var FREE_SHIPPING_FROM = 100, SHIPPING_FEE = 5.90;
+  var ALCOHOL_MSG = "L'abus d'alcool est dangereux pour la santé. À consommer avec modération.";
+  function lg(k, label){ var v = LEGAL[k]; return v ? escHtml(v) : '<span class="todo">[À compléter : '+label+']</span>'; }
+  function legalPage(kicker, title, inner){
+    return '<div class="wrap"><section class="section legal">'+
+      '<p class="section-kicker">'+kicker+'</p><h1 class="eyebrow-title">'+title+'</h1>'+
+      '<p class="legal-date">Dernière mise à jour : '+escHtml(LEGAL.updatedAt || "")+'</p>'+
+      '<div class="legal-body">'+inner+'</div></section></div>';
+  }
+  function siteHost(){ return SITE_URL.replace(/^https?:\/\//,"").replace(/\/$/,""); }
+  function mailLink(){ var m = LEGAL.email || "info@corbillonnerie.com"; return '<a href="mailto:'+escHtml(m)+'">'+escHtml(m)+'</a>'; }
+  function identityBlock(){
+    return '<ul>'+
+      '<li>Dénomination : <strong>'+lg("companyName","raison sociale")+'</strong> ('+lg("legalForm","forme juridique")+'), au capital de '+lg("capital","capital social")+'</li>'+
+      '<li>Siège social : '+lg("address","adresse du siège")+'</li>'+
+      '<li>SIRET : '+lg("siret","n° SIRET")+' — RCS : '+lg("rcs","ville du RCS et numéro")+'</li>'+
+      '<li>N° de TVA intracommunautaire : '+lg("vatNumber","n° de TVA")+'</li>'+
+      (LEGAL.exciseNumber ? '<li>N° d\'accises : '+escHtml(LEGAL.exciseNumber)+'</li>' : '')+
+      '<li>Téléphone : '+lg("phone","téléphone")+'</li>'+
+      '<li>E-mail : '+mailLink()+'</li>'+
+    '</ul>';
+  }
+
+  route("/mentions-legales", function(){
+    return legalPage("Informations légales","Mentions <em>légales</em>",
+      '<h2>1. Éditeur du site</h2>'+
+      '<p>Le site <strong>'+siteHost()+'</strong> est édité par :</p>'+ identityBlock() +
+      '<p>Directeur de la publication : '+lg("publisherName","nom du directeur de la publication")+'.</p>'+
+      '<h2>2. Hébergement et prestataires techniques</h2>'+
+      '<ul>'+
+        '<li>Hébergement du site : Vercel Inc., 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis — <a href="https://vercel.com" rel="noopener" target="_blank">vercel.com</a>.</li>'+
+        '<li>Base de données et stockage des images : Supabase — <a href="https://supabase.com" rel="noopener" target="_blank">supabase.com</a>.</li>'+
+        '<li>Paiement en ligne : Stripe Payments Europe, Ltd. (Irlande) — <a href="https://stripe.com/fr" rel="noopener" target="_blank">stripe.com</a>.</li>'+
+      '</ul>'+
+      '<h2>3. Conception</h2>'+
+      '<p>Conception et développement du site : Studio Onze.</p>'+
+      '<h2>4. Propriété intellectuelle</h2>'+
+      '<p>L\'ensemble des contenus du site (textes, photographies, vidéos, logos, marques, éléments graphiques, noms de cuvées) est la propriété de '+lg("companyName","raison sociale")+' ou de ses partenaires et est protégé par le droit d\'auteur et le droit des marques. Toute reproduction, représentation, adaptation ou diffusion, totale ou partielle, sans autorisation écrite préalable est interdite.</p>'+
+      '<h2>5. Responsabilité</h2>'+
+      '<p>Nous apportons le plus grand soin à l\'exactitude des informations publiées, mais ne pouvons garantir l\'absence d\'erreur ou d\'omission. Les photographies sont non contractuelles. Le site peut contenir des liens vers des sites tiers dont nous ne contrôlons pas le contenu ; nous déclinons toute responsabilité à leur égard. L\'accès au site peut être interrompu pour maintenance ou en cas de force majeure.</p>'+
+      '<h2>6. Données personnelles et cookies</h2>'+
+      '<p>Le traitement de vos données personnelles est décrit dans notre <a href="/confidentialite/">politique de confidentialité et de cookies</a>.</p>'+
+      '<h2>7. Consommation d\'alcool</h2>'+
+      '<div class="boxed"><p><strong>'+ALCOHOL_MSG+'</strong> La vente d\'alcool aux mineurs de moins de 18 ans est interdite. La consommation de boissons alcoolisées pendant la grossesse, même en faible quantité, peut avoir des conséquences graves sur la santé de l\'enfant.</p></div>'+
+      '<h2>8. Droit applicable</h2>'+
+      '<p>Le présent site et ses mentions légales sont soumis au droit français. En cas de litige, et à défaut de résolution amiable, les tribunaux français sont compétents, sous réserve des règles protectrices applicables aux consommateurs.</p>'
+    );
+  });
+
+  route("/cgv", function(){
+    var zones = lg("deliveryZones","zones de livraison");
+    return legalPage("Vente en ligne","Conditions générales <em>de vente</em>",
+      '<p>Les présentes conditions générales de vente (« CGV ») régissent les ventes de produits conclues à distance, sur le site <strong>'+siteHost()+'</strong>, entre le vendeur et toute personne physique majeure agissant en qualité de consommateur (« le Client »).</p>'+
+      '<h2>1. Vendeur</h2>'+ identityBlock() +
+      '<h2>2. Produits</h2>'+
+      '<p>Les produits proposés sont les champagnes, les Bulles de Vanille, le ratafia, les coffrets et accessoires présentés sur le site, dans la limite des stocks disponibles. Les caractéristiques essentielles de chaque produit (format, cépage, notes de dégustation…) figurent sur sa fiche. Les photographies sont non contractuelles. Les millésimes et habillages peuvent légèrement évoluer.</p>'+
+      '<h2>3. Vente réservée aux personnes majeures</h2>'+
+      '<p>Conformément à l\'article L. 3342-1 du Code de la santé publique, la vente d\'alcool aux mineurs de moins de 18 ans est interdite. En passant commande, le Client déclare avoir au moins 18 ans. La livraison peut être refusée ou la commande annulée et remboursée si la majorité du destinataire ne peut être établie. '+ALCOHOL_MSG+'</p>'+
+      '<h2>4. Prix</h2>'+
+      '<p>Les prix sont indiqués en euros, toutes taxes comprises (TVA à 20 % incluse), hors frais de livraison. Les frais de livraison sont de '+euro(SHIPPING_FEE)+' pour toute commande inférieure à '+euro(FREE_SHIPPING_FROM)+' et offerts à partir de '+euro(FREE_SHIPPING_FROM)+' d\'achat. Les droits d\'accises sont inclus dans le prix pour les livraisons en France. Le vendeur peut modifier ses prix à tout moment ; les produits sont facturés au prix en vigueur lors de la validation de la commande.</p>'+
+      '<h2>5. Commande</h2>'+
+      '<p>Le Client sélectionne ses produits, les ajoute au panier, vérifie son contenu et le prix total, renseigne ses coordonnées et son adresse de livraison, accepte les présentes CGV, puis valide sa commande en cliquant sur le bouton de paiement : cette validation vaut commande avec obligation de paiement. Un e-mail de confirmation récapitulant la commande est envoyé au Client. Le vendeur peut refuser ou annuler toute commande anormale, en cas de litige existant avec le Client ou de rupture de stock (le Client est alors remboursé).</p>'+
+      '<h2>6. Paiement</h2>'+
+      '<p>Le paiement s\'effectue en ligne, par carte bancaire, via la plateforme sécurisée Stripe. Le vendeur n\'a pas accès aux données complètes de votre carte. Le paiement est exigible immédiatement à la commande ; le vendeur reste propriétaire des produits jusqu\'à leur paiement intégral.</p>'+
+      '<h2>7. Livraison</h2>'+
+      '<p>Les produits sont livrés à l\'adresse indiquée par le Client, dans les zones suivantes : '+zones+'. Délai indicatif d\'expédition et de livraison : '+lg("deliveryDelay","délai de livraison indicatif")+' à compter de la validation du paiement. Le Client doit être majeur pour réceptionner le colis. À la livraison, le Client vérifie l\'état du colis en présence du transporteur ; en cas de casse, de manquant ou d\'avarie, il formule des <strong>réserves précises et motivées sur le bon de livraison</strong> et les confirme au transporteur par lettre recommandée dans les 3 jours ouvrés suivant la réception, avec copie au vendeur à l\'adresse '+mailLink()+'.</p>'+
+      '<h2>8. Droit de rétractation</h2>'+
+      '<p>Conformément aux articles L. 221-18 et suivants du Code de la consommation, le Client dispose d\'un délai de <strong>14 jours</strong> à compter de la réception des produits pour exercer son droit de rétractation, sans avoir à justifier de motif. Pour l\'exercer, il notifie sa décision de manière non équivoque par e-mail à '+mailLink()+' ou par courrier à l\'adresse du vendeur (un modèle de formulaire est disponible sur demande). Les produits doivent être retournés sans retard excessif, au plus tard 14 jours après la notification, dans leur emballage d\'origine et en parfait état, aux frais du Client. Le vendeur rembourse l\'intégralité des sommes versées, y compris les frais de livraison standard, dans un délai de 14 jours à compter de la réception de la rétractation, en utilisant le même moyen de paiement ; il peut différer le remboursement jusqu\'à la récupération des produits.</p>'+
+      '<p><strong>Exceptions (art. L. 221-28 du Code de la consommation) :</strong> le droit de rétractation ne peut être exercé pour les produits personnalisés, notamment les bouteilles à étiquette personnalisée réalisées selon les spécifications du Client, ni pour les produits descellés ou entamés après la livraison, qui ne peuvent être renvoyés pour des raisons de protection de la santé.</p>'+
+      '<h2>9. Garanties légales</h2>'+
+      '<p>Le vendeur est tenu de la garantie légale de conformité (articles L. 217-3 et suivants du Code de la consommation) et de la garantie des vices cachés (articles 1641 et suivants du Code civil). Le Client peut demander la mise en conformité du bien, ou, à défaut, son remplacement, une réduction du prix ou la résolution du contrat. La garantie légale de conformité s\'applique pendant 2 ans à compter de la délivrance du bien, sans que le Client ait à prouver l\'existence du défaut pendant cette période.</p>'+
+      '<h2>10. Responsabilité</h2>'+
+      '<p>Le vendeur n\'est pas responsable de l\'inexécution du contrat en cas de force majeure, de fait imputable au Client ou à un tiers, ni des retards imputables au transporteur. Les produits doivent être conservés et consommés avec modération, selon les indications de leur fiche.</p>'+
+      '<h2>11. Données personnelles</h2>'+
+      '<p>Les données collectées lors de la commande sont traitées conformément à notre <a href="/confidentialite/">politique de confidentialité</a>.</p>'+
+      '<h2>12. Propriété intellectuelle</h2>'+
+      '<p>Les contenus du site sont protégés (voir les <a href="/mentions-legales/">mentions légales</a>). Aucune cession de droit n\'est consentie au Client du fait de sa commande.</p>'+
+      '<h2>13. Médiation de la consommation</h2>'+
+      '<p>En cas de litige, le Client s\'adresse en priorité au vendeur : '+mailLink()+'. À défaut de solution amiable, le Client peut recourir gratuitement au médiateur de la consommation suivant : <strong>'+lg("mediatorName","nom du médiateur de la consommation")+'</strong>, '+
+        (LEGAL.mediatorUrl ? '<a href="'+escHtml(LEGAL.mediatorUrl)+'" rel="noopener" target="_blank">'+escHtml(LEGAL.mediatorUrl)+'</a>' : lg("mediatorUrl","site internet du médiateur"))+
+        (LEGAL.mediatorAddress ? ', '+escHtml(LEGAL.mediatorAddress) : '')+'.</p>'+
+      '<h2>14. Droit applicable</h2>'+
+      '<p>Les présentes CGV sont soumises au droit français. Le Client consommateur bénéficie des dispositions impératives protectrices de son pays de résidence. Tout litige relève des juridictions compétentes en application des règles du Code de la consommation.</p>'
+    );
+  });
+
+  route("/confidentialite", function(){
+    return legalPage("Vos données","Confidentialité <em>et cookies</em>",
+      '<h2>1. Responsable du traitement</h2>'+
+      '<p>Le responsable du traitement de vos données personnelles est <strong>'+lg("companyName","raison sociale")+'</strong>, '+lg("address","adresse du siège")+'. Contact : '+mailLink()+'.</p>'+
+      '<h2>2. Données collectées, finalités et bases légales</h2>'+
+      '<ul>'+
+        '<li><strong>Commande</strong> (nom, prénom, adresse de livraison et de facturation, e-mail, téléphone, contenu de la commande) : exécution du contrat de vente, livraison, facturation, service après-vente. <em>Base légale : exécution du contrat ; obligations légales comptables et fiscales.</em></li>'+
+        '<li><strong>Paiement</strong> : traité directement par Stripe ; nous ne conservons pas votre numéro de carte. <em>Base légale : exécution du contrat.</em></li>'+
+        '<li><strong>Formulaire de contact et demandes de personnalisation d\'étiquette</strong> (nom, e-mail, téléphone, message) : répondre à votre demande. <em>Base légale : intérêt légitime / mesures précontractuelles.</em></li>'+
+        '<li><strong>Vérification de l\'âge</strong> : votre confirmation de majorité est mémorisée dans votre navigateur uniquement ; aucune donnée n\'est envoyée à nos serveurs.</li>'+
+      '</ul>'+
+      '<p>Nous ne faisons ni profilage, ni publicité ciblée, et ne vendons pas vos données.</p>'+
+      '<h2>3. Durées de conservation</h2>'+
+      '<ul>'+
+        '<li>Données de commande et de facturation : 10 ans (obligations comptables), en archivage à accès restreint après la livraison.</li>'+
+        '<li>Messages de contact : 3 ans à compter du dernier échange.</li>'+
+      '</ul>'+
+      '<h2>4. Destinataires</h2>'+
+      '<p>Vos données sont accessibles aux personnes habilitées de '+lg("companyName","raison sociale")+' et à nos prestataires, uniquement pour les finalités ci-dessus : Stripe (paiement), Supabase (base de données), Vercel (hébergement), le prestataire d\'envoi d\'e-mails du site et les transporteurs (nom, adresse, téléphone pour la livraison). Certains prestataires sont situés hors de l\'Union européenne (notamment aux États-Unis) ; les transferts sont encadrés par les garanties prévues par le RGPD (clauses contractuelles types ou décision d\'adéquation).</p>'+
+      '<h2>5. Vos droits</h2>'+
+      '<p>Vous disposez d\'un droit d\'accès, de rectification, d\'effacement, de limitation, d\'opposition et de portabilité de vos données, ainsi que du droit de définir des directives sur leur sort après votre décès. Pour les exercer, écrivez à '+mailLink()+' en joignant, si nécessaire, un justificatif d\'identité. Vous pouvez introduire une réclamation auprès de la CNIL (<a href="https://www.cnil.fr" rel="noopener" target="_blank">cnil.fr</a>).</p>'+
+      '<h2 id="cookies">6. Cookies et stockage local</h2>'+
+      '<p>Ce site <strong>n\'utilise aucun cookie publicitaire ni outil de mesure d\'audience</strong>. Il enregistre uniquement dans votre navigateur (stockage local) :</p>'+
+      '<ul>'+
+        '<li><code>rd_cart</code> : le contenu de votre panier ;</li>'+
+        '<li><code>rd_age_ok</code> : la confirmation que vous êtes majeur (conservée 30 jours).</li>'+
+      '</ul>'+
+      '<p>Ces éléments sont strictement nécessaires au service que vous demandez et ne requièrent donc pas votre consentement. Les polices de caractères sont hébergées sur notre propre site (aucune requête vers des serveurs tiers à l\'affichage). Lors du paiement, vous êtes redirigé vers Stripe, qui peut déposer des cookies nécessaires à la sécurité du paiement et à la prévention de la fraude, selon <a href="https://stripe.com/fr/privacy" rel="noopener" target="_blank">sa propre politique</a>. Si nous ajoutons un jour un outil de mesure d\'audience, cette page sera mise à jour et votre consentement sera demandé au préalable.</p>'+
+      '<h2>7. Sécurité</h2>'+
+      '<p>Le site est servi en HTTPS ; l\'accès aux données de commande est réservé aux administrateurs authentifiés et protégé par des règles d\'accès au niveau de la base de données.</p>'
+    );
+  });
+
+  /* ---------------- VÉRIFICATION DE L'ÂGE (vente d'alcool interdite aux mineurs) ---------------- */
+  var AGE_KEY = "rd_age_ok", AGE_NO_KEY = "rd_age_no", AGE_DAYS = 30;
+  function ageOk(){
+    try{ var t = parseInt(localStorage.getItem(AGE_KEY) || "0", 10); return !!t && (Date.now() - t) < AGE_DAYS * 864e5; }
+    catch(e){ return !!window.__rdAgeSession; }
+  }
+  function setAgeOk(){
+    try{ localStorage.setItem(AGE_KEY, String(Date.now())); }catch(e){ window.__rdAgeSession = true; }
+    try{ sessionStorage.removeItem(AGE_NO_KEY); }catch(e){}
+  }
+  function ageRefused(){ try{ return sessionStorage.getItem(AGE_NO_KEY) === "1"; }catch(e){ return !!window.__rdAgeNo; } }
+  function setAgeRefused(){ try{ sessionStorage.setItem(AGE_NO_KEY, "1"); }catch(e){ window.__rdAgeNo = true; } }
+  function ageGate(){
+    if(/jsdom/i.test(navigator.userAgent) || ageOk()) return;      /* pas de fenêtre dans les pages pré-rendues */
+    var blocks = document.querySelectorAll("header.site-header, main, footer");
+    var o = document.createElement("div");
+    o.className = "age-gate"; o.id = "ageGate";
+    o.setAttribute("role","dialog"); o.setAttribute("aria-modal","true"); o.setAttribute("aria-labelledby","ageTitle");
+    document.documentElement.classList.add("age-lock");
+    blocks.forEach(function(b){ b.setAttribute("inert",""); b.setAttribute("aria-hidden","true"); });
+    document.body.appendChild(o);
+    function release(){
+      o.remove(); document.documentElement.classList.remove("age-lock");
+      blocks.forEach(function(b){ b.removeAttribute("inert"); b.removeAttribute("aria-hidden"); });
+    }
+    function showQuestion(){
+      o.innerHTML = '<div class="age-box">'+
+        '<p class="kicker">RUELLE — DOMMANGE</p>'+
+        '<h2 id="ageTitle">Avez-vous 18 ans ou plus ?</h2>'+
+        '<p>Ce site propose la vente de boissons alcoolisées, réservée aux personnes majeures. Merci de confirmer votre âge pour accéder au site.</p>'+
+        '<div class="age-actions"><button type="button" class="btn" id="ageYes">Oui, j\'ai 18 ans ou plus</button>'+
+        '<button type="button" class="btn btn-outline" id="ageNo">Non, j\'ai moins de 18 ans</button></div>'+
+        '<p class="age-legal">'+ALCOHOL_MSG+' La vente d\'alcool aux mineurs est interdite.</p></div>';
+      document.getElementById("ageYes").addEventListener("click", function(){ setAgeOk(); release(); });
+      document.getElementById("ageNo").addEventListener("click", function(){ setAgeRefused(); showRefused(); });
+      document.getElementById("ageYes").focus();
+    }
+    function showRefused(){
+      o.innerHTML = '<div class="age-box">'+
+        '<p class="kicker">RUELLE — DOMMANGE</p>'+
+        '<h2 id="ageTitle" tabindex="-1">Accès réservé aux personnes majeures</h2>'+
+        '<p>Vous devez avoir 18 ans ou plus pour consulter ce site. La vente et la consommation d\'alcool sont interdites aux mineurs.</p>'+
+        '<p class="age-legal">'+ALCOHOL_MSG+'</p></div>';
+      document.getElementById("ageTitle").focus();
+    }
+    o.addEventListener("keydown", function(e){                      /* le focus reste dans la fenêtre */
+      if(e.key !== "Tab") return;
+      var f = o.querySelectorAll("button"); if(!f.length){ e.preventDefault(); return; }
+      var first = f[0], last = f[f.length-1];
+      if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+      else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+    });
+    ageRefused() ? showRefused() : showQuestion();
+  }
+
   var currentFilter = "Tous les produits";
+  var CHAMPAGNE_CATEGORIES = CATEGORIES.filter(function(c){ return c !== "Bulles de Vanille"; });
+  var SORT_SELECT = '<select class="sort-select" id="sortSelect">'+
+      '<option value="default">Trier par</option>'+
+      '<option value="price-asc">Prix croissant</option>'+
+      '<option value="price-desc">Prix décroissant</option>'+
+      '<option value="name">Nom (A-Z)</option>'+
+    '</select>';
   route("/produits", function(){
     return '<div class="wrap">'+
       '<section style="padding-top:44px;">'+
-        '<div class="remark-box">Remarque : la livraison est offerte dès 100€ d\'achat sur l\'ensemble de notre gamme de champagnes et créations.</div>'+
+        '<div class="remark-box">Remarque : la livraison est offerte dès '+FREE_SHIPPING_FROM+'€ d\'achat sur l\'ensemble de notre gamme de champagnes.</div>'+
       '</section>'+
       '<section class="section center" style="padding-bottom:0;">'+
-        '<h1 class="eyebrow-title"><em>Découvrez</em> nos bouteilles</h1>'+
+        '<h1 class="eyebrow-title"><em>Découvrez</em> nos champagnes</h1>'+
         '<p class="lede">Viticulteur de champagne de père en fils, nous vous offrons une gamme de produits de qualité à des prix défiant toute concurrence.</p>'+
       '</section>'+
       '<section class="section" style="padding-top:0;">'+
         '<div class="filter-row">'+
-          '<div class="filter-tabs" id="filterTabs">'+ CATEGORIES.map(function(c){
+          '<div class="filter-tabs" id="filterTabs">'+ CHAMPAGNE_CATEGORIES.map(function(c){
             return '<button data-cat="'+c+'" class="'+(c===currentFilter?"active":"")+'">'+c+'</button>';
           }).join("") +'</div>'+
-          '<select class="sort-select" id="sortSelect">'+
-            '<option value="default">Trier par</option>'+
-            '<option value="price-asc">Prix croissant</option>'+
-            '<option value="price-desc">Prix décroissant</option>'+
-            '<option value="name">Nom (A-Z)</option>'+
-          '</select>'+
+          SORT_SELECT+
         '</div>'+
-        '<div class="grid-products" id="productsGrid"></div>'+
+        '<div class="grid-products" id="productsGrid" data-family="champagne"></div>'+
+      '</section>'+
+      '<section class="section center" style="padding-top:0;">'+
+        '<div class="remark-box" style="text-align:center;">Notre création à part : les <strong>Bulles de Vanille</strong>, une gamme distincte de nos champagnes. '+
+          '<a href="/bulles-de-vanille/" class="btn btn-outline" style="margin-left:12px;">Découvrir les Bulles de Vanille</a></div>'+
+      '</section>'+
+    '</div>';
+  });
+
+  route("/bulles-de-vanille", function(){
+    return '<div class="wrap">'+
+      '<section style="padding-top:44px;">'+
+        '<div class="remark-box">Remarque : la livraison est offerte dès '+FREE_SHIPPING_FROM+'€ d\'achat.</div>'+
+      '</section>'+
+      '<section class="section center" style="padding-bottom:0;">'+
+        '<h1 class="eyebrow-title"><em>Nos</em> Bulles de Vanille</h1>'+
+        '<p class="lede">Une création originale née d\'un grain de folie et d\'une envie d\'innover. Les Bulles de Vanille forment une gamme à part, distincte de nos champagnes : une expérience surprenante mêlant finesse et notes gourmandes de vanille.</p>'+
+      '</section>'+
+      '<section class="section" style="padding-top:0;">'+
+        '<div class="filter-row" style="justify-content:flex-end;">'+ SORT_SELECT +'</div>'+
+        '<div class="grid-products" id="productsGrid" data-family="vanille"></div>'+
+      '</section>'+
+      '<section class="section center" style="padding-top:0;">'+
+        '<div class="remark-box" style="text-align:center;">Vous cherchez nos champagnes ? '+
+          '<a href="/produits/" class="btn btn-outline" style="margin-left:12px;">Voir nos champagnes</a></div>'+
       '</section>'+
     '</div>';
   });
@@ -841,8 +1059,10 @@
   function renderProductsGrid(){
     var grid = document.getElementById("productsGrid");
     if(!grid) return;
+    var vanille = grid.getAttribute("data-family") === "vanille";
     var list = PRODUCTS.filter(function(p){
-      return currentFilter==="Tous les produits" || p.cat===currentFilter;
+      if(isVanille(p) !== vanille) return false;          /* les deux gammes ne sont jamais mélangées */
+      return vanille || currentFilter==="Tous les produits" || p.cat===currentFilter;
     });
     var sortVal = document.getElementById("sortSelect") ? document.getElementById("sortSelect").value : "default";
     if(sortVal==="price-asc") list = list.slice().sort(function(a,b){return a.price-b.price;});
@@ -874,7 +1094,7 @@
   }
   function pageProduit(id){
     var p = PRODUCTS.find(function(x){return x.id===id;}) || PRODUCTS[0];
-    var others = PRODUCTS.filter(function(x){return x.id!==p.id;}).slice(0,4);
+    var others = PRODUCTS.filter(function(x){return x.id!==p.id && isVanille(x)===isVanille(p);}).slice(0,4);
     var specsHTML = p.specs ? '<div class="pd-specs">'+ p.specs.map(function(s){
         return '<div class="pd-spec"><div class="label">'+s.label+'</div><div class="value">'+s.value+'</div></div>';
       }).join("") +'</div>' : '';
@@ -917,7 +1137,7 @@
       '</section>'+
 
       '<section class="section">'+
-        '<h2 class="eyebrow-title"><em>Nos autres</em> bouteilles</h2>'+
+        '<h2 class="eyebrow-title"><em>Nos autres</em> '+(isVanille(p) ? "Bulles de Vanille" : "bouteilles")+'</h2>'+
         '<div class="grid-products">'+ others.map(productCard).join("") +'</div>'+
       '</section>'+
     '</div>';
@@ -1056,7 +1276,7 @@
       '<p class="section-kicker">Nos cuvées</p>'+
       '<h2 class="eyebrow-title">Découvrez nos <span class="u-accent">champagnes</span></h2>'+
       '<p class="lede">Minéralité, fraîcheur et caractère : chacune de nos cuvées exprime un équilibre précis entre les trois cépages champenois.</p>'+
-      carouselHTML("aboutCarousel", PRODUCTS.slice(0,8), "text-align:left;margin-top:40px;justify-content:center;") +
+      carouselHTML("aboutCarousel", PRODUCTS.filter(function(x){ return !isVanille(x); }).slice(0,8), "text-align:left;margin-top:40px;justify-content:center;") +
       '<div class="see-all-row"><a href="/produits/" class="btn btn-outline">Voir la gamme complète</a></div>'+
     '</section></div>'+
 
@@ -1093,6 +1313,7 @@
         '<div class="field"><label for="fTel">N° de tél. (facultatif)</label><input id="fTel" type="tel"></div>'+
         '<div class="field full"><label for="fSujet">Sujet / Objet</label><input id="fSujet"></div>'+
         '<div class="field full"><label for="fMsg">Message</label><textarea id="fMsg" rows="5" required></textarea></div>'+
+        '<p class="form-note-legal" style="grid-column:1/-1;font-size:.8rem;color:var(--ink-soft);margin:0;">Les informations saisies servent uniquement à répondre à votre demande (voir notre <a href="/confidentialite/" style="text-decoration:underline;">politique de confidentialité</a>).</p>'+
         '<div class="form-submit-row"><button type="submit" class="btn">Envoyez le message</button></div>'+
         '<p class="form-note" id="formNote">Merci, votre message a bien été envoyé ! Nous vous répondrons rapidement.</p>'+
       '</form>'+
@@ -1147,7 +1368,7 @@
       var p = PRODUCTS.find(function(x){return x.id===item.id;});
       return s + (p ? p.price*item.qty : 0);
     },0);
-    var shipping = subtotal >= 100 ? 0 : 5.90;
+    var shipping = subtotal >= FREE_SHIPPING_FROM ? 0 : SHIPPING_FEE;
     var total = subtotal+shipping;              /* prix affichés TTC */
     var tva = total*20/120;                      /* TVA 20 % incluse */
     return '<div class="wrap"><section class="section">'+
@@ -1162,6 +1383,7 @@
           '<div class="summary-total"><span>Total TTC</span><span>'+euro(total)+'</span></div>'+
           '<div class="summary-line"><span>dont TVA (20 %)</span><span>'+euro(tva)+'</span></div>'+
           '<p class="small">Nous restons disponible pour toutes éventuelles questions. Pour nous contacter, remplissez ce formulaire de contact et nous vous y répondrons le plus vite possible.</p>'+
+          '<p class="small" style="margin-top:14px;">En poursuivant, vous confirmez avoir 18 ans ou plus et acceptez nos <a href="/cgv/" style="text-decoration:underline;">conditions générales de vente</a>. '+ALCOHOL_MSG+'</p>'+
           '<button class="btn" style="width:100%;" id="checkoutBtn">Procéder au paiement</button>'+
         '</div>'+
       '</div>'+
@@ -1191,7 +1413,7 @@
     bindFaq();
     if(path==="/") bindCarousel("homeCarousel");
     if(path==="/apropos") bindCarousel("aboutCarousel");
-    if(path==="/produits") bindProduitsPage();
+    if(path==="/produits" || path==="/bulles-de-vanille") bindProduitsPage();
     if(path==="/contact") bindContact();
     if(path==="/panier") bindPanier();
   }
@@ -1235,9 +1457,10 @@
   window.__rdReady = new Promise(function(resolve){ window.__rdResolve = resolve; });
   window.__RD = {
     get products(){ return PRODUCTS; }, absUrl:absUrl, productImageUrl:productImageUrl, productsSig:productsSig,
-    pages:["/","/produits","/etiquette","/evenements","/apropos","/contact","/panier"], urls:ROUTE_TO_URL
+    pages:["/","/produits","/bulles-de-vanille","/etiquette","/evenements","/apropos","/contact","/panier"], urls:ROUTE_TO_URL
   };
   render({hydrate:prerendered, keepScroll:true});
+  ageGate();
   loadFromSupabase();
   updateCartCount();
 })();

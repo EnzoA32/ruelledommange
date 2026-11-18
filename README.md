@@ -31,6 +31,15 @@ Connexion par e-mail + mot de passe (réservée aux comptes présents dans `admi
 | `SUPABASE_KEY` | clé publique `sb_publishable_…` |
 | `DEPLOY_HOOK_URL` | Vercel > Settings > Git > Deploy Hooks > créer un hook (branche de production) |
 
+## Conformité légale (France)
+- Pages **Mentions légales**, **CGV**, **Confidentialité et cookies** générées à partir de `site.config.json > legal`. Tout champ vide s'affiche en jaune « À compléter » et le build affiche un avertissement : à renseigner avant la mise en ligne (raison sociale, forme juridique, capital, SIRET, RCS, TVA, directeur de la publication, délai de livraison, médiateur de la consommation).
+- **Vérification de l'âge** (18 ans) à l'arrivée : confirmation mémorisée 30 jours dans le navigateur (`rd_age_ok`) ; un refus bloque l'accès pour la session. La fenêtre est ajoutée par JavaScript (absente du HTML pré-rendu, donc non bloquante pour Google).
+- **Aucun cookie tiers** : polices Quicksand/Larken hébergées sur le site (pas de Google Fonts), pas de statistiques. Si un outil d'audience est ajouté, prévoir un bandeau de consentement et mettre à jour la page Confidentialité.
+- Mention « L'abus d'alcool est dangereux pour la santé » dans la fenêtre d'âge, le pied de page, le panier et les CGV.
+
+## Gammes séparées
+Les **Bulles de Vanille** (catégorie exacte `Bulles de Vanille` dans l'admin) ne sont jamais mélangées aux champagnes : page dédiée `/bulles-de-vanille/`, sous-menu « Nos Produits », exclues de `/produits/` (même « Tous les produits »), du carrousel d'accueil et des suggestions des fiches champagne.
+
 ## Prix
 Tous les prix sont **TTC** (TVA 20 % incluse). Stockés en centimes dans `products.price_cents`. Livraison : 5,90 € sous 100 € d'achat, offerte au-delà.
 

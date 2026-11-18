@@ -10,6 +10,7 @@ const cfg = JSON.parse(fs.readFileSync(path.join(root, "site.config.json"), "utf
 const SITE_URL = (process.env.SITE_URL || cfg.siteUrl).replace(/\/+$/, "");
 const SB_URL = (process.env.SUPABASE_URL || cfg.supabaseUrl || "").replace(/\/+$/, "");
 const SB_KEY = process.env.SUPABASE_KEY || cfg.supabaseKey || "";
+const LEGAL = { ...(cfg.legal || {}), updatedAt: new Date().toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) };
 const SRC = path.join(root, "src");
 const DIST = path.join(root, "dist");
 const md5 = (s) => crypto.createHash("md5").update(s).digest("hex").slice(0, 8);
@@ -24,7 +25,8 @@ fs.cpSync(path.join(SRC, "public"), DIST, { recursive: true });
 const adminJsPath = path.join(DIST, "admin/admin.js");   // l'admin reçoit l'URL et la clé PUBLIQUE Supabase
 if (fs.existsSync(adminJsPath)) fs.writeFileSync(adminJsPath, fs.readFileSync(adminJsPath, "utf8").replaceAll("__SUPABASE_URL__", SB_URL).replaceAll("__SUPABASE_KEY__", SB_KEY));
 
-let js = fs.readFileSync(path.join(SRC, "assets/js/app.js"), "utf8").replaceAll("__SITE_URL__", SITE_URL).replaceAll("__SUPABASE_URL__", SB_URL).replaceAll("__SUPABASE_KEY__", SB_KEY);
+let js = fs.readFileSync(path.join(SRC, "assets/js/app.js"), "utf8").replaceAll("__SITE_URL__", SITE_URL).replaceAll("__SUPABASE_URL__", SB_URL).replaceAll("__SUPABASE_KEY__", SB_KEY)
+  .replace("/*__LEGAL__*/", () => "LEGAL = " + JSON.stringify(LEGAL).replace(/</g, "\\u003c") + ";");
 fs.writeFileSync(path.join(DIST, "assets/js/app.js"), js);
 const css = fs.readFileSync(path.join(DIST, "assets/css/style.css"), "utf8");
 const JS_V = md5(js), CSS_V = md5(css);
@@ -54,6 +56,11 @@ if (process.env.SUPABASE_MOCK_DIR) {          // mode test local : lit products.
 } else {
   warn("Supabase non configuré (supabaseUrl / supabaseKey dans site.config.json) → données par défaut du code.");
 }
+
+// ---------- 2b. pages légales : champs à renseigner ----------
+const LEGAL_REQUIRED = { companyName: "raison sociale", legalForm: "forme juridique", capital: "capital social", siret: "SIRET", rcs: "RCS", vatNumber: "n° de TVA", publisherName: "directeur de la publication", deliveryDelay: "délai de livraison", mediatorName: "médiateur de la consommation", mediatorUrl: "site du médiateur" };
+const legalMissing = Object.entries(LEGAL_REQUIRED).filter(([k]) => !String(LEGAL[k] || "").trim()).map(([, label]) => label);
+if (legalMissing.length) warn("PAGES LÉGALES INCOMPLÈTES (site.config.json > legal) : " + legalMissing.join(", ") + " → affichés en jaune « À compléter » sur le site. À renseigner avant la mise en ligne.");
 
 // ---------- 3. gabarit ----------
 const head = fs.readFileSync(path.join(SRC, "head.html"), "utf8")
@@ -105,7 +112,7 @@ function outFile(urlPath) {
 
 // ---------- 4. pages ----------
 const home = await prerender("/");
-const pageUrls = ["/", "/produits/", "/creation-etiquette/", "/evenements/", "/a-propos/", "/contact/", "/panier/"];
+const pageUrls = ["/", "/produits/", "/bulles-de-vanille/", "/creation-etiquette/", "/evenements/", "/a-propos/", "/contact/", "/panier/", "/mentions-legales/", "/cgv/", "/confidentialite/"];
 const productUrls = home.products.map((p) => `/produits/${p.id}/`);
 const results = [home];
 for (const u of [...pageUrls.slice(1), ...productUrls, "/404.html"]) results.push(await prerender(u));

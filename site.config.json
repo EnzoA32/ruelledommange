@@ -1,5 +1,23 @@
 {
   "siteUrl": "https://www.ruelle-dommange.fr",
   "supabaseUrl": "https://xysyqgmbidsfdegqqbij.supabase.co",
-  "supabaseKey": "sb_publishable_L3hlaeYNwEisilh9PuCmag_8Fr_SEQ9"
+  "supabaseKey": "sb_publishable_L3hlaeYNwEisilh9PuCmag_8Fr_SEQ9",
+  "legal": {
+    "companyName": "",
+    "legalForm": "",
+    "capital": "",
+    "siret": "",
+    "rcs": "",
+    "vatNumber": "",
+    "exciseNumber": "",
+    "publisherName": "",
+    "address": "47 rue de la Fontaine, 02310 Domptin, France",
+    "phone": "+33 6 82 12 37 66",
+    "email": "info@corbillonnerie.com",
+    "deliveryZones": "France métropolitaine",
+    "deliveryDelay": "",
+    "mediatorName": "",
+    "mediatorUrl": "",
+    "mediatorAddress": ""
+  }
 }

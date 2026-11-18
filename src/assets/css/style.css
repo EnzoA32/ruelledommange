@@ -1,3 +1,8 @@
+@font-face{font-family:'Quicksand';font-style:normal;font-weight:300;font-display:swap;src:url(/assets/fonts/quicksand-300.woff2) format('woff2');}
+@font-face{font-family:'Quicksand';font-style:normal;font-weight:400;font-display:swap;src:url(/assets/fonts/quicksand-400.woff2) format('woff2');}
+@font-face{font-family:'Quicksand';font-style:normal;font-weight:500;font-display:swap;src:url(/assets/fonts/quicksand-500.woff2) format('woff2');}
+@font-face{font-family:'Quicksand';font-style:normal;font-weight:600;font-display:swap;src:url(/assets/fonts/quicksand-600.woff2) format('woff2');}
+@font-face{font-family:'Quicksand';font-style:normal;font-weight:700;font-display:swap;src:url(/assets/fonts/quicksand-700.woff2) format('woff2');}
 @font-face{
     font-family:'Larken';
     src:url(/assets/fonts/larken-200.fd9d4429.woff2) format('woff2');
@@ -576,3 +581,45 @@ main:focus{outline:none;}
 address{font-style:normal;}
 .oc-card a{text-decoration:underline;text-underline-offset:3px;}
 @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto;} }
+
+
+/* ---------- menu déroulant "Nos Produits" ---------- */
+.nav-dd{position:relative;}
+.nav-dd>a .chev{margin-left:3px;vertical-align:1px;transition:transform .2s;}
+.nav-dd:hover>a .chev,.nav-dd:focus-within>a .chev{transform:rotate(180deg);}
+.nav-dd>a[data-nav-parent].active{color:var(--ink);border-color:var(--ink);}
+.nav-dd-menu{display:none;position:absolute;top:100%;left:-18px;min-width:240px;padding:14px 0 8px;z-index:300;}
+.nav-dd-menu::before{content:"";position:absolute;inset:6px 0 0 0;background:var(--cream);border:1px solid var(--line);box-shadow:var(--shadow);z-index:-1;}
+.nav-dd:hover .nav-dd-menu,.nav-dd:focus-within .nav-dd-menu{display:block;}
+.nav-left .nav-dd-menu a{display:block;padding:11px 22px;border-bottom:0;color:var(--ink-soft);}
+.nav-left .nav-dd-menu a:hover,.nav-left .nav-dd-menu a.active{background:var(--cream-2);color:var(--ink);border-color:transparent;}
+
+/* ---------- pages légales ---------- */
+.legal-body{max-width:820px;margin:28px auto 0;text-align:left;}
+.legal-body h2{font-size:1.35rem;margin:34px 0 10px;}
+.legal-body h3{font-size:1.05rem;margin:22px 0 8px;font-family:'Quicksand',sans-serif;font-weight:600;}
+.legal-body p,.legal-body li{line-height:1.7;color:var(--ink-soft);font-size:.95rem;}
+.legal-body ul{padding-left:20px;margin:8px 0 14px;}
+.legal-body a{text-decoration:underline;}
+.legal-date{font-size:.85rem;color:var(--ink-soft);margin-top:6px;}
+.legal-body .todo{background:#fff3b0;padding:0 4px;border-radius:2px;color:#6b4a00;font-weight:600;}
+.legal-body .boxed{border:1px solid var(--line);background:var(--cream-2);padding:16px 20px;margin:16px 0;}
+
+/* ---------- pied de page : mentions ---------- */
+.alcohol-note{text-align:center;font-size:.8rem;color:var(--ink-soft);margin:44px 0 0;}
+.legal-links{display:flex;gap:10px 26px;justify-content:center;flex-wrap:wrap;margin:14px 0 0;}
+.legal-links a{font-size:.82rem;color:var(--ink-soft);text-decoration:underline;}
+.legal-links a:hover{color:var(--ink);}
+footer .alcohol-note+.legal-links+.copyright{margin-top:26px;}
+
+/* ---------- vérification de l'âge ---------- */
+html.age-lock,html.age-lock body{overflow:hidden;}
+.age-gate{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(15,28,10,.94);}
+.age-box{background:var(--cream);max-width:520px;width:100%;padding:44px 40px 34px;text-align:center;border:1px solid var(--olive-dark);box-shadow:0 30px 80px rgba(0,0,0,.45);}
+.age-box .kicker{font-size:.72rem;letter-spacing:.28em;color:var(--accent);margin:0 0 14px;font-weight:600;}
+.age-box h2{font-size:1.9rem;line-height:1.2;margin:0 0 14px;}
+.age-box p{color:var(--ink-soft);line-height:1.6;margin:0 0 22px;font-size:.95rem;}
+.age-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.age-actions .btn{min-width:200px;}
+.age-box .age-legal{font-size:.78rem;margin:26px 0 0;color:var(--ink-soft);opacity:.85;}
+@media(max-width:520px){.age-box{padding:34px 22px 26px;}.age-box h2{font-size:1.55rem;}.age-actions .btn{width:100%;}}

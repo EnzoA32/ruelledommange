@@ -3,7 +3,13 @@
   <div class="wrap nav-row">
     <nav class="nav-left" aria-label="Navigation principale">
       <a href="/" data-nav="/">Accueil</a>
-      <a href="/produits/" data-nav="/produits">Nos Produits</a>
+      <div class="nav-dd">
+        <a href="/produits/" data-nav-parent aria-haspopup="true">Nos Produits <svg class="chev" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
+        <div class="nav-dd-menu">
+          <a href="/produits/" data-nav="/produits">Nos champagnes</a>
+          <a href="/bulles-de-vanille/" data-nav="/bulles-de-vanille">Nos Bulles de Vanille</a>
+        </div>
+      </div>
       <a href="/creation-etiquette/" data-nav="/etiquette">Création d'étiquette</a>
     </nav>
     <a href="/" class="logo" aria-label="Ruelle-Dommange, accueil">
@@ -32,7 +38,8 @@
   </div>
   <nav class="mobile-menu wrap" id="mobileMenu" aria-label="Menu mobile">
     <a href="/">Accueil</a>
-    <a href="/produits/">Nos Produits</a>
+    <a href="/produits/">Nos champagnes</a>
+    <a href="/bulles-de-vanille/">Nos Bulles de Vanille</a>
     <a href="/creation-etiquette/">Création d'étiquette</a>
     <a href="/evenements/">Événements</a>
     <a href="/a-propos/">A propos</a>
@@ -54,8 +61,7 @@
         <h5>Nos Produits</h5>
         <ul>
           <li><a href="/produits/">Nos champagnes</a></li>
-          <li><a href="/produits/">Nos Bulles Vanille</a></li>
-          <li><a href="/produits/">Le Merchandising</a></li>
+          <li><a href="/bulles-de-vanille/">Nos Bulles de Vanille</a></li>
         </ul>
       </div>
       <div>
@@ -74,6 +80,12 @@
         </ul>
       </div>
     </div>
+    <p class="alcohol-note">L'abus d'alcool est dangereux pour la santé. À consommer avec modération. La vente d'alcool aux mineurs est interdite.</p>
+    <nav class="legal-links" aria-label="Informations légales">
+      <a href="/mentions-legales/">Mentions légales</a>
+      <a href="/cgv/">Conditions générales de vente</a>
+      <a href="/confidentialite/">Confidentialité et cookies</a>
+    </nav>
     <p class="copyright">Copyright © Ruelle-Dommange. Tous droits réservés. Développé et Designé par @StudioOnze</p>
   </div>
 </footer>
